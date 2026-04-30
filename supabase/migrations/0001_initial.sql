@@ -2,7 +2,7 @@
 -- Schéma initial VTC SaaS
 -- Généré automatiquement depuis le projet de prod
 -- Source: iixpsfsqyfnllggvsvfl.supabase.co (schéma public)
--- Date: 2026-04-30T13:32:05.027Z
+-- Date: 2026-04-30T13:47:53.707Z
 --
 -- À rejouer sur chaque nouvelle base client (vide).
 -- ============================================================
@@ -24,19 +24,9 @@ CREATE SEQUENCE IF NOT EXISTS public."alertes_envoyees_id_seq" AS bigint
   MINVALUE 1 MAXVALUE 9223372036854775807
   CACHE 1 NO CYCLE;
 
-CREATE SEQUENCE IF NOT EXISTS public."boyahbot_memory_id_seq" AS bigint
-  START WITH 1 INCREMENT BY 1
-  MINVALUE 1 MAXVALUE 9223372036854775807
-  CACHE 1 NO CYCLE;
-
 CREATE SEQUENCE IF NOT EXISTS public."chauffeurs_id_chauffeur_seq" AS bigint
   START WITH 1 INCREMENT BY 1
   MINVALUE 1 MAXVALUE 9223372036854775807
-  CACHE 1 NO CYCLE;
-
-CREATE SEQUENCE IF NOT EXISTS public."chauffeurs_yango_snapshot_id_seq" AS integer
-  START WITH 1 INCREMENT BY 1
-  MINVALUE 1 MAXVALUE 2147483647
   CACHE 1 NO CYCLE;
 
 CREATE SEQUENCE IF NOT EXISTS public."clients_id_seq" AS integer
@@ -52,11 +42,6 @@ CREATE SEQUENCE IF NOT EXISTS public."entretiens_vehicules_id_seq" AS bigint
 CREATE SEQUENCE IF NOT EXISTS public."recettes_wave_id_seq" AS bigint
   START WITH 1 INCREMENT BY 1
   MINVALUE 1 MAXVALUE 9223372036854775807
-  CACHE 1 NO CYCLE;
-
-CREATE SEQUENCE IF NOT EXISTS public."records_flotte_id_seq" AS integer
-  START WITH 1 INCREMENT BY 1
-  MINVALUE 1 MAXVALUE 2147483647
   CACHE 1 NO CYCLE;
 
 CREATE SEQUENCE IF NOT EXISTS public."role_permissions_id_seq" AS bigint
@@ -164,27 +149,6 @@ CREATE TABLE public."alertes_envoyees" (
   CONSTRAINT "alertes_envoyees_pkey" PRIMARY KEY (id)
 );
 
-CREATE TABLE public."boyahbot_memory" (
-  "id" bigint DEFAULT nextval('boyahbot_memory_id_seq'::regclass) NOT NULL,
-  "session_id" text NOT NULL,
-  "message" jsonb NOT NULL,
-  "created_at" timestamp with time zone DEFAULT now(),
-  CONSTRAINT "boyahbot_memory_pkey" PRIMARY KEY (id)
-);
-
-CREATE TABLE public."calendrier" (
-  "date" date NOT NULL,
-  "annee" integer,
-  "mois" integer,
-  "jour" integer,
-  "semaine" integer,
-  "jour_semaine" integer,
-  "nom_mois" text,
-  "nom_jour" text,
-  "trimestre" integer,
-  CONSTRAINT "calendrier_pkey" PRIMARY KEY (date)
-);
-
 CREATE TABLE public."chauffeurs" (
   "id_chauffeur" integer DEFAULT nextval('chauffeurs_id_chauffeur_seq'::regclass) NOT NULL,
   "nom" text,
@@ -201,19 +165,6 @@ CREATE TABLE public."chauffeurs" (
   "domicile" text,
   "numero_garant" text,
   CONSTRAINT "chauffeurs_pkey" PRIMARY KEY (id_chauffeur)
-);
-
-CREATE TABLE public."chauffeurs_yango_snapshot" (
-  "id" integer DEFAULT nextval('chauffeurs_yango_snapshot_id_seq'::regclass) NOT NULL,
-  "yango_driver_id" text NOT NULL,
-  "first_name" text,
-  "last_name" text,
-  "phone" text,
-  "work_status" text,
-  "premiere_vue_at" timestamp with time zone DEFAULT now(),
-  "derniere_vue_at" timestamp with time zone DEFAULT now(),
-  CONSTRAINT "chauffeurs_yango_snapshot_pkey" PRIMARY KEY (id),
-  CONSTRAINT "chauffeurs_yango_snapshot_yango_driver_id_key" UNIQUE (yango_driver_id)
 );
 
 CREATE TABLE public."clients" (
@@ -272,17 +223,6 @@ CREATE TABLE public."entretiens" (
   CONSTRAINT "entretiens_pkey" PRIMARY KEY (id)
 );
 
-CREATE TABLE public."entretiens_vehicules" (
-  "id" bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  "id_vehicule" integer,
-  "type_entretien" text,
-  "date_entretien" date,
-  "km_vehicule" integer,
-  "cout" numeric,
-  "created_at" timestamp without time zone DEFAULT now(),
-  CONSTRAINT "entretiens_vehicules_pkey" PRIMARY KEY (id)
-);
-
 CREATE TABLE public."jours_feries" (
   "date" date NOT NULL,
   "libelle" text NOT NULL,
@@ -304,94 +244,6 @@ CREATE TABLE public."justifications_versement" (
   "created_at" timestamp with time zone DEFAULT now(),
   CONSTRAINT "justifications_versement_pkey" PRIMARY KEY (id),
   CONSTRAINT "justifications_versement_id_vehicule_jour_exploitation_key" UNIQUE (id_vehicule, jour_exploitation)
-);
-
-CREATE TABLE public."match_stats" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "match_id" uuid NOT NULL,
-  "player_id" uuid NOT NULL,
-  "goals" integer DEFAULT 0,
-  "assists" integer DEFAULT 0,
-  "yellow_cards" integer DEFAULT 0,
-  "red_cards" integer DEFAULT 0,
-  "minutes_played" integer DEFAULT 90,
-  "rating" numeric(3,1) DEFAULT 5.0,
-  "is_mvp" boolean DEFAULT false,
-  "created_at" timestamp with time zone DEFAULT now(),
-  "team" character varying(1),
-  "unsporting" boolean DEFAULT false,
-  "behavior_note" text DEFAULT ''::text,
-  CONSTRAINT "match_stats_pkey" PRIMARY KEY (id),
-  CONSTRAINT "match_stats_match_id_player_id_key" UNIQUE (match_id, player_id),
-  CONSTRAINT "match_stats_rating_check" CHECK (((rating >= (1)::numeric) AND (rating <= (10)::numeric))),
-  CONSTRAINT "match_stats_team_check" CHECK (((team)::text = ANY ((ARRAY['A'::character varying, 'B'::character varying])::text[])))
-);
-
-CREATE TABLE public."matches" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "date" timestamp with time zone NOT NULL,
-  "is_public_holiday" boolean DEFAULT false,
-  "holiday_name" text DEFAULT ''::text,
-  "opponent" character varying(255) NOT NULL,
-  "venue" character varying(20) DEFAULT 'home'::character varying,
-  "location" text DEFAULT 'Terrain d''Aghien'::text,
-  "our_score" integer DEFAULT 0,
-  "opponent_score" integer DEFAULT 0,
-  "result" character varying(20) DEFAULT 'pending'::character varying,
-  "notes" text DEFAULT ''::text,
-  "published" boolean DEFAULT false,
-  "created_at" timestamp with time zone DEFAULT now(),
-  "updated_at" timestamp with time zone DEFAULT now(),
-  "session_type" character varying(20) DEFAULT 'training'::character varying,
-  CONSTRAINT "matches_pkey" PRIMARY KEY (id),
-  CONSTRAINT "matches_result_check" CHECK (((result)::text = ANY ((ARRAY['win'::character varying, 'draw'::character varying, 'loss'::character varying, 'pending'::character varying])::text[]))),
-  CONSTRAINT "matches_session_type_check" CHECK (((session_type)::text = ANY ((ARRAY['training'::character varying, 'external'::character varying])::text[]))),
-  CONSTRAINT "matches_venue_check" CHECK (((venue)::text = ANY ((ARRAY['home'::character varying, 'away'::character varying, 'neutral'::character varying])::text[])))
-);
-
-CREATE TABLE public."message_reads" (
-  "message_id" uuid NOT NULL,
-  "user_id" uuid NOT NULL,
-  "read_at" timestamp with time zone DEFAULT now(),
-  CONSTRAINT "message_reads_pkey" PRIMARY KEY (message_id, user_id)
-);
-
-CREATE TABLE public."message_targets" (
-  "message_id" uuid NOT NULL,
-  "user_id" uuid NOT NULL,
-  CONSTRAINT "message_targets_pkey" PRIMARY KEY (message_id, user_id)
-);
-
-CREATE TABLE public."messages" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "sender_id" uuid,
-  "sender_name" character varying(255) NOT NULL,
-  "title" character varying(500) NOT NULL,
-  "content" text NOT NULL,
-  "target_all" boolean DEFAULT true,
-  "created_at" timestamp with time zone DEFAULT now(),
-  "updated_at" timestamp with time zone DEFAULT now(),
-  CONSTRAINT "messages_pkey" PRIMARY KEY (id)
-);
-
-CREATE TABLE public."payments" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "user_id" uuid NOT NULL,
-  "type" character varying(20),
-  "amount" integer NOT NULL,
-  "month" integer,
-  "year" integer,
-  "description" text DEFAULT ''::text,
-  "status" character varying(20) DEFAULT 'pending'::character varying,
-  "wave_reference" text DEFAULT ''::text,
-  "wave_transaction_id" text DEFAULT ''::text,
-  "paid_at" timestamp with time zone,
-  "created_at" timestamp with time zone DEFAULT now(),
-  "updated_at" timestamp with time zone DEFAULT now(),
-  CONSTRAINT "payments_pkey" PRIMARY KEY (id),
-  CONSTRAINT "payments_month_check" CHECK (((month >= 1) AND (month <= 12))),
-  CONSTRAINT "payments_status_check" CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'completed'::character varying, 'failed'::character varying])::text[]))),
-  CONSTRAINT "payments_type_check" CHECK (((type)::text = ANY ((ARRAY['adhesion'::character varying, 'monthly'::character varying, 'exceptional'::character varying])::text[])))
 );
 
 CREATE TABLE public."profiles" (
@@ -425,16 +277,6 @@ CREATE TABLE public."recettes_wave" (
   CONSTRAINT "recettes_wave_Identifiant de transaction_key" UNIQUE ("Identifiant de transaction")
 );
 
-CREATE TABLE public."records_flotte" (
-  "id" integer DEFAULT nextval('records_flotte_id_seq'::regclass) NOT NULL,
-  "type_record" text NOT NULL,
-  "valeur" numeric NOT NULL,
-  "date_record" date NOT NULL,
-  "updated_at" timestamp with time zone DEFAULT now(),
-  CONSTRAINT "records_flotte_pkey" PRIMARY KEY (id),
-  CONSTRAINT "records_flotte_type_record_key" UNIQUE (type_record)
-);
-
 CREATE TABLE public."role_permissions" (
   "id" bigint DEFAULT nextval('role_permissions_id_seq'::regclass) NOT NULL,
   "role" text NOT NULL,
@@ -444,22 +286,6 @@ CREATE TABLE public."role_permissions" (
   CONSTRAINT "role_permissions_pkey" PRIMARY KEY (id),
   CONSTRAINT "role_permissions_role_action_key" UNIQUE (role, action),
   CONSTRAINT "role_permissions_role_check" CHECK ((role = ANY (ARRAY['admin'::text, 'dispatcher'::text])))
-);
-
-CREATE TABLE public."support_tickets" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "user_id" uuid NOT NULL,
-  "user_name" character varying(255) NOT NULL,
-  "subject" character varying(500) NOT NULL,
-  "message" text NOT NULL,
-  "status" character varying(20) DEFAULT 'open'::character varying,
-  "admin_reply" text DEFAULT ''::text,
-  "replied_at" timestamp with time zone,
-  "replied_by" uuid,
-  "created_at" timestamp with time zone DEFAULT now(),
-  "updated_at" timestamp with time zone DEFAULT now(),
-  CONSTRAINT "support_tickets_pkey" PRIMARY KEY (id),
-  CONSTRAINT "support_tickets_status_check" CHECK (((status)::text = ANY ((ARRAY['open'::character varying, 'in_progress'::character varying, 'resolved'::character varying])::text[])))
 );
 
 CREATE TABLE public."taches_suivi" (
@@ -472,29 +298,6 @@ CREATE TABLE public."taches_suivi" (
   "created_at" timestamp with time zone DEFAULT now(),
   "fait_at" timestamp with time zone,
   CONSTRAINT "taches_suivi_pkey" PRIMARY KEY (id)
-);
-
-CREATE TABLE public."users" (
-  "id" uuid DEFAULT gen_random_uuid() NOT NULL,
-  "phone" character varying(20) NOT NULL,
-  "pin" text NOT NULL,
-  "first_name" character varying(100) NOT NULL,
-  "last_name" character varying(100) NOT NULL,
-  "role" character varying(10) DEFAULT 'member'::character varying,
-  "photo" text DEFAULT ''::text,
-  "position" character varying(50) DEFAULT ''::character varying,
-  "jersey_number" integer,
-  "join_date" timestamp with time zone DEFAULT now(),
-  "is_active" boolean DEFAULT true,
-  "address" text DEFAULT ''::text,
-  "email" character varying(255) DEFAULT ''::character varying,
-  "created_at" timestamp with time zone DEFAULT now(),
-  "updated_at" timestamp with time zone DEFAULT now(),
-  "team" character varying(1),
-  CONSTRAINT "users_pkey" PRIMARY KEY (id),
-  CONSTRAINT "users_phone_key" UNIQUE (phone),
-  CONSTRAINT "users_role_check" CHECK (((role)::text = ANY ((ARRAY['admin'::character varying, 'member'::character varying])::text[]))),
-  CONSTRAINT "users_team_check" CHECK (((team)::text = ANY ((ARRAY['A'::character varying, 'B'::character varying])::text[])))
 );
 
 CREATE TABLE public."vehicules" (
@@ -563,10 +366,7 @@ CREATE TABLE public."versements_clients" (
 
 ALTER SEQUENCE public."activity_logs_id_seq" OWNED BY public."activity_logs"."id";
 ALTER SEQUENCE public."alertes_envoyees_id_seq" OWNED BY public."alertes_envoyees"."id";
-ALTER SEQUENCE public."boyahbot_memory_id_seq" OWNED BY public."boyahbot_memory"."id";
-ALTER SEQUENCE public."chauffeurs_yango_snapshot_id_seq" OWNED BY public."chauffeurs_yango_snapshot"."id";
 ALTER SEQUENCE public."clients_id_seq" OWNED BY public."clients"."id";
-ALTER SEQUENCE public."records_flotte_id_seq" OWNED BY public."records_flotte"."id";
 ALTER SEQUENCE public."role_permissions_id_seq" OWNED BY public."role_permissions"."id";
 ALTER SEQUENCE public."versements_clients_id_seq" OWNED BY public."versements_clients"."id";
 
@@ -578,17 +378,7 @@ ALTER TABLE public."affectation_chauffeurs_vehicules" ADD CONSTRAINT "affectatio
 ALTER TABLE public."depenses_vehicules" ADD CONSTRAINT "depenses_vehicules_id_vehicule_fkey" FOREIGN KEY (id_vehicule) REFERENCES vehicules(id_vehicule);
 ALTER TABLE public."entretiens" ADD CONSTRAINT "entretiens_id_vehicule_fkey" FOREIGN KEY (id_vehicule) REFERENCES vehicules(id_vehicule) ON DELETE CASCADE;
 ALTER TABLE public."justifications_versement" ADD CONSTRAINT "justifications_versement_id_vehicule_fkey" FOREIGN KEY (id_vehicule) REFERENCES vehicules(id_vehicule) ON DELETE CASCADE;
-ALTER TABLE public."match_stats" ADD CONSTRAINT "match_stats_match_id_fkey" FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE;
-ALTER TABLE public."match_stats" ADD CONSTRAINT "match_stats_player_id_fkey" FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE public."message_reads" ADD CONSTRAINT "message_reads_message_id_fkey" FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE;
-ALTER TABLE public."message_reads" ADD CONSTRAINT "message_reads_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE public."message_targets" ADD CONSTRAINT "message_targets_message_id_fkey" FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE;
-ALTER TABLE public."message_targets" ADD CONSTRAINT "message_targets_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
-ALTER TABLE public."messages" ADD CONSTRAINT "messages_sender_id_fkey" FOREIGN KEY (sender_id) REFERENCES users(id);
-ALTER TABLE public."payments" ADD CONSTRAINT "payments_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE public."profiles" ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE;
-ALTER TABLE public."support_tickets" ADD CONSTRAINT "support_tickets_replied_by_fkey" FOREIGN KEY (replied_by) REFERENCES users(id);
-ALTER TABLE public."support_tickets" ADD CONSTRAINT "support_tickets_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 ALTER TABLE public."taches_suivi" ADD CONSTRAINT "taches_suivi_id_entretien_fkey" FOREIGN KEY (id_entretien) REFERENCES entretiens(id) ON DELETE SET NULL;
 ALTER TABLE public."taches_suivi" ADD CONSTRAINT "taches_suivi_id_vehicule_fkey" FOREIGN KEY (id_vehicule) REFERENCES vehicules(id_vehicule) ON DELETE CASCADE;
 ALTER TABLE public."vehicules" ADD CONSTRAINT "vehicules_id_client_fkey" FOREIGN KEY (id_client) REFERENCES clients(id);
@@ -603,29 +393,13 @@ CREATE INDEX idx_agent_conv_chat ON public.agent_conversations USING btree (tele
 CREATE INDEX ai_insights_created_at_idx ON public.ai_insights USING btree (created_at DESC);
 CREATE INDEX idx_alertes_expiration ON public.alertes_envoyees USING btree (date_expiration) WHERE (statut <> 'ignoree'::text);
 CREATE INDEX idx_alertes_type_cible ON public.alertes_envoyees USING btree (type_alerte, cible, date_envoi DESC);
-CREATE INDEX idx_boyahbot_memory_session ON public.boyahbot_memory USING btree (session_id, created_at DESC);
-CREATE INDEX idx_yango_snapshot_driver_id ON public.chauffeurs_yango_snapshot USING btree (yango_driver_id);
 CREATE INDEX commandes_yango_created_at_idx ON public.commandes_yango USING btree (created_at DESC);
 CREATE INDEX commandes_yango_ended_at_idx ON public.commandes_yango USING btree (ended_at DESC);
 CREATE INDEX commandes_yango_status_idx ON public.commandes_yango USING btree (status);
 CREATE INDEX idx_entretiens_prochain ON public.entretiens USING btree (date_prochain);
 CREATE INDEX idx_entretiens_vehicule ON public.entretiens USING btree (id_vehicule);
-CREATE INDEX idx_match_stats_match_id ON public.match_stats USING btree (match_id);
-CREATE INDEX idx_match_stats_player_id ON public.match_stats USING btree (player_id);
-CREATE INDEX idx_match_stats_team ON public.match_stats USING btree (team);
-CREATE INDEX idx_matches_date ON public.matches USING btree (date DESC);
-CREATE INDEX idx_matches_published ON public.matches USING btree (published);
-CREATE INDEX idx_messages_created ON public.messages USING btree (created_at DESC);
-CREATE INDEX idx_payments_status ON public.payments USING btree (status);
-CREATE INDEX idx_payments_user_id ON public.payments USING btree (user_id);
-CREATE INDEX idx_payments_year ON public.payments USING btree (year);
-CREATE INDEX idx_tickets_status ON public.support_tickets USING btree (status);
-CREATE INDEX idx_tickets_user_id ON public.support_tickets USING btree (user_id);
 CREATE INDEX idx_taches_fait ON public.taches_suivi USING btree (fait);
 CREATE INDEX idx_taches_vehicule ON public.taches_suivi USING btree (id_vehicule);
-CREATE INDEX idx_users_phone ON public.users USING btree (phone);
-CREATE INDEX idx_users_role ON public.users USING btree (role);
-CREATE INDEX idx_users_team ON public.users USING btree (team);
 CREATE INDEX idx_va_jour ON public.versement_attribution USING btree (jour_exploitation);
 CREATE INDEX idx_va_vehicule_jour ON public.versement_attribution USING btree (id_vehicule, jour_exploitation);
 
@@ -822,13 +596,6 @@ CREATE OR REPLACE VIEW public."alerte_visite_technique" AS
     date_expiration_visite - CURRENT_DATE AS jours_restants
    FROM vehicules
   WHERE date_expiration_visite <= (CURRENT_DATE + '7 days'::interval);
-
-CREATE OR REPLACE VIEW public."budget_maintenance_mensuel" AS
- SELECT date_trunc('month'::text, date_entretien::timestamp with time zone) AS mois,
-    sum(cout) AS budget
-   FROM entretiens_vehicules
-  GROUP BY (date_trunc('month'::text, date_entretien::timestamp with time zone))
-  ORDER BY (date_trunc('month'::text, date_entretien::timestamp with time zone));
 
 CREATE OR REPLACE VIEW public."prevision_budget_maintenance" AS
  SELECT avg(budget) AS budget_moyen_mensuel
@@ -1074,11 +841,6 @@ CREATE OR REPLACE VIEW public."vue_dashboard_vehicules" AS
 -- ────────── Triggers ──────────
 
 CREATE TRIGGER set_agent_memory_updated_at BEFORE UPDATE ON public.agent_memory FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER trg_matches_updated_at BEFORE UPDATE ON public.matches FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-CREATE TRIGGER trg_messages_updated_at BEFORE UPDATE ON public.messages FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-CREATE TRIGGER trg_payments_updated_at BEFORE UPDATE ON public.payments FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-CREATE TRIGGER trg_tickets_updated_at BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-CREATE TRIGGER trg_users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 -- ────────── Row Level Security ──────────
 
