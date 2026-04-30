@@ -206,7 +206,7 @@ CREATE TABLE public."entretiens" (
   "id_vehicule" integer,
   "immatriculation" text NOT NULL,
   "date_realise" date NOT NULL,
-  "date_prochain" date DEFAULT (date_realise + '21 days'::interval),
+  "date_prochain" date GENERATED ALWAYS AS (date_realise + '21 days'::interval) STORED,
   "huile_moteur" boolean DEFAULT false,
   "filtre_huile" boolean DEFAULT false,
   "filtre_air" boolean DEFAULT false,
@@ -596,10 +596,6 @@ CREATE OR REPLACE VIEW public."alerte_visite_technique" AS
     date_expiration_visite - CURRENT_DATE AS jours_restants
    FROM vehicules
   WHERE date_expiration_visite <= (CURRENT_DATE + '7 days'::interval);
-
-CREATE OR REPLACE VIEW public."prevision_budget_maintenance" AS
- SELECT avg(budget) AS budget_moyen_mensuel
-   FROM budget_maintenance_mensuel;
 
 CREATE OR REPLACE VIEW public."alerte_pneus" AS
  SELECT id_vehicule,
