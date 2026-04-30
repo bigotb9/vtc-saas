@@ -32,8 +32,14 @@ export default function TenantsListPage() {
   const [tenants, setTenants] = useState<Tenant[] | null>(null)
 
   const load = async () => {
-    const { data } = await sb.from("tenants").select("*").order("created_at", { ascending: false })
-    setTenants(data || [])
+    const { data: sess } = await sb.auth.getSession()
+    if (!sess.session) return
+    const res = await fetch("/api/saas/tenants", {
+      headers: { Authorization: `Bearer ${sess.session.access_token}` },
+    })
+    if (!res.ok) { setTenants([]); return }
+    const { tenants } = await res.json()
+    setTenants(tenants || [])
   }
   useEffect(() => { load() }, [])
 

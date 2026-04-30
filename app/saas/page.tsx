@@ -16,17 +16,24 @@ export default function SaasDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
 
   useEffect(() => {
-    sb.from("tenants").select("provisioning_status, statut")
-      .then(({ data }) => {
-        const s: Stats = { total: 0, active: 0, pending: 0, failed: 0 }
-        for (const t of data || []) {
-          s.total++
-          if (t.statut === "active" && t.provisioning_status === "ready") s.active++
-          else if (t.provisioning_status === "failed")                     s.failed++
-          else if (t.provisioning_status !== "ready")                      s.pending++
-        }
-        setStats(s)
+    const load = async () => {
+      const { data: sess } = await sb.auth.getSession()
+      if (!sess.session) return
+      const res = await fetch("/api/saas/tenants", {
+        headers: { Authorization: `Bearer ${sess.session.access_token}` },
       })
+      if (!res.ok) { setStats({ total: 0, active: 0, pending: 0, failed: 0 }); return }
+      const { tenants } = await res.json()
+      const s: Stats = { total: 0, active: 0, pending: 0, failed: 0 }
+      for (const t of tenants || []) {
+        s.total++
+        if (t.statut === "active" && t.provisioning_status === "ready") s.active++
+        else if (t.provisioning_status === "failed")                     s.failed++
+        else if (t.provisioning_status !== "ready")                      s.pending++
+      }
+      setStats(s)
+    }
+    load()
   }, [])
 
   const cards = [
