@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* ── Base ── */
+html { scroll-behavior: smooth; }
+body {
+  background-color: #f1f5f9;
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--font-geist), system-ui, sans-serif;
+}
+
+/* Chiffres et montants en monospace Geist */
+.font-numeric {
+  font-family: var(--font-geist-mono), monospace;
+  font-feature-settings: "tnum";
+}
+.dark body {
+  background-color: #070B12;
+  background-image:
+    radial-gradient(ellipse 90% 55% at 15% -5%,  rgba(99,102,241,0.09) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 45% at 85% 105%, rgba(14,165,233,0.07) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 30% at 50% 50%,  rgba(99,102,241,0.03) 0%, transparent 70%);
+  background-attachment: fixed;
+}
+
+/* Grain noise overlay (très subtil, juste de la texture) */
+.dark body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* ── Sidebar nav active ── */
+.nav-active {
+  background: linear-gradient(90deg, rgba(99,102,241,0.12) 0%, rgba(99,102,241,0.03) 100%);
+  border-left: 2px solid #6366f1;
+  color: #6366f1 !important;
+}
+.dark .nav-active {
+  background: linear-gradient(90deg, rgba(129,140,248,0.15) 0%, rgba(129,140,248,0.04) 100%);
+  border-left: 2px solid #818cf8;
+  color: #818cf8 !important;
+}
+
+/* ── Animations ── */
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-in { animation: fadeSlideIn 0.25s ease forwards; }
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* ── Transitions globales fluides (dark/light) ── */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+/* Exclure les éléments qui ne doivent pas transitionner */
+svg, img, canvas {
+  transition: none !important;
+}
+
+/* ── Focus visible accessible ── */
+:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ── Scrollbar raffinée ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #6366f1; }
+.dark ::-webkit-scrollbar-thumb { background: #1E2D45; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
