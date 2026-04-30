@@ -4,6 +4,7 @@ import "./globals.css"
 import { Geist, Geist_Mono } from "next/font/google"
 import Sidebar from "@/components/Sidebar"
 import AuthGuard from "@/components/AuthGuard"
+import TenantProvider from "@/components/TenantProvider"
 import { ThemeProvider } from "next-themes"
 import { SidebarProvider, useSidebar } from "@/lib/SidebarContext"
 import { useEffect, useState } from "react"
@@ -70,14 +71,16 @@ function AppShell({ children }: { children: React.ReactNode }) {
 
 function TenantShell({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
-      <AuthGuard>
-        <Sidebar />
-        <AppShell>{children}</AppShell>
-        <MobileNav />
-        <Toaster />
-      </AuthGuard>
-    </SidebarProvider>
+    <TenantProvider>
+      <SidebarProvider>
+        <AuthGuard>
+          <Sidebar />
+          <AppShell>{children}</AppShell>
+          <MobileNav />
+          <Toaster />
+        </AuthGuard>
+      </SidebarProvider>
+    </TenantProvider>
   )
 }
 
