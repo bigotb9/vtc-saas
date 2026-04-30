@@ -1,0 +1,123 @@
+import { NextRequest, NextResponse } from "next/server"
+import fs from "fs/promises"
+import path from "path"
+import { supabaseMaster } from "@/lib/supabaseMaster"
+import { supabaseManagement } from "@/lib/supabaseManagement"
+import { requireSaasAdmin } from "@/lib/saasAuth"
+
+/**
+ * POST /api/saas/tenants/[id]/sync
+ *
+ * Polled par le frontend pendant le provisioning. Vérifie l'état du
+ * projet Supabase, et quand il devient ACTIVE_HEALTHY, exécute la
+ * migration initiale puis passe le tenant à 'ready'.
+ */
+
+async function logStep(tenantId: string, step: string, status: "started"|"success"|"failed", message?: string, durationMs?: number) {
+  try {
+    await supabaseMaster.from("provisioning_logs").insert({
+      tenant_id: tenantId, step, status,
+      message: message ?? null,
+      duration_ms: durationMs ?? null,
+    })
+  } catch (e) {
+    console.error("[provisioning_logs]", e)
+  }
+}
+
+export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const admin = await requireSaasAdmin(req)
+  if (admin instanceof NextResponse) return admin
+
+  const { id } = await ctx.params
+
+  const { data: tenant } = await supabaseMaster.from("tenants").select("*").eq("id", id).single()
+  if (!tenant) return NextResponse.json({ error: "tenant introuvable" }, { status: 404 })
+
+  // Si déjà ready, rien à faire
+  if (tenant.provisioning_status === "ready") {
+    return NextResponse.json({ tenant, done: true })
+  }
+  if (tenant.provisioning_status === "failed") {
+    return NextResponse.json({ tenant, done: true, error: tenant.provisioning_error })
+  }
+  if (tenant.supabase_project_ref === "pending") {
+    return NextResponse.json({ tenant, done: false, message: "projet pas encore créé" })
+  }
+
+  // 1. Check status du projet
+  const project = await supabaseManagement.getProject(tenant.supabase_project_ref).catch(e => {
+    return { _err: (e as Error).message }
+  })
+  if ("_err" in project) {
+    return NextResponse.json({ tenant, done: false, message: project._err })
+  }
+  if (project.status !== "ACTIVE_HEALTHY") {
+    return NextResponse.json({ tenant, done: false, message: `status=${project.status}` })
+  }
+
+  // 2. Projet ACTIVE_HEALTHY → on récupère les keys
+  const t0 = Date.now()
+  await logStep(tenant.id, "fetch_api_keys", "started")
+  let keys: { name: string; api_key: string }[]
+  try {
+    keys = await supabaseManagement.getApiKeys(tenant.supabase_project_ref)
+  } catch (e) {
+    const msg = (e as Error).message
+    await logStep(tenant.id, "fetch_api_keys", "failed", msg, Date.now() - t0)
+    return NextResponse.json({ tenant, done: false, message: msg })
+  }
+
+  const anon    = keys.find(k => k.name === "anon")?.api_key
+  const service = keys.find(k => k.name === "service_role")?.api_key
+  if (!anon || !service) {
+    const msg = `Keys manquantes (got: ${keys.map(k=>k.name).join(",")})`
+    await logStep(tenant.id, "fetch_api_keys", "failed", msg, Date.now() - t0)
+    return NextResponse.json({ tenant, done: false, message: msg })
+  }
+  await logStep(tenant.id, "fetch_api_keys", "success", undefined, Date.now() - t0)
+
+  // 3. Update tenant avec keys + status='migrating'
+  await supabaseMaster.from("tenants").update({
+    supabase_anon_key:    anon,
+    supabase_service_key: service,
+    provisioning_status:  "migrating",
+  }).eq("id", tenant.id)
+
+  // 4. Exécute la migration initiale
+  const migPath = path.join(process.cwd(), "supabase", "migrations", "0001_initial.sql")
+  let migSql: string
+  try {
+    migSql = await fs.readFile(migPath, "utf-8")
+  } catch (e) {
+    const msg = `Migration file introuvable: ${(e as Error).message}`
+    await logStep(tenant.id, "read_migration", "failed", msg)
+    await supabaseMaster.from("tenants").update({
+      provisioning_status: "failed", provisioning_error: msg,
+    }).eq("id", tenant.id)
+    return NextResponse.json({ tenant, done: true, error: msg })
+  }
+
+  const tMig = Date.now()
+  await logStep(tenant.id, "run_migration", "started", `${migSql.length} chars`)
+  try {
+    await supabaseManagement.runSql(tenant.supabase_project_ref, migSql)
+  } catch (e) {
+    const msg = (e as Error).message
+    await logStep(tenant.id, "run_migration", "failed", msg, Date.now() - tMig)
+    await supabaseMaster.from("tenants").update({
+      provisioning_status: "failed", provisioning_error: msg,
+    }).eq("id", tenant.id)
+    return NextResponse.json({ tenant, done: true, error: msg })
+  }
+  await logStep(tenant.id, "run_migration", "success", undefined, Date.now() - tMig)
+
+  // 5. Final → ready
+  const { data: finalTenant } = await supabaseMaster.from("tenants")
+    .update({ provisioning_status: "ready", provisioning_error: null })
+    .eq("id", tenant.id)
+    .select()
+    .single()
+
+  return NextResponse.json({ tenant: finalTenant, done: true })
+}

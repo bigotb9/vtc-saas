@@ -7,6 +7,7 @@ import AuthGuard from "@/components/AuthGuard"
 import { ThemeProvider } from "next-themes"
 import { SidebarProvider, useSidebar } from "@/lib/SidebarContext"
 import { useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import PageTransition from "@/components/PageTransition"
 import Toaster from "@/components/Toaster"
 import MobileNav from "@/components/MobileNav"
@@ -67,19 +68,28 @@ function AppShell({ children }: { children: React.ReactNode }) {
   )
 }
 
+function TenantShell({ children }: { children: React.ReactNode }) {
+  return (
+    <SidebarProvider>
+      <AuthGuard>
+        <Sidebar />
+        <AppShell>{children}</AppShell>
+        <MobileNav />
+        <Toaster />
+      </AuthGuard>
+    </SidebarProvider>
+  )
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname() || ""
+  const isSaasRoute = pathname.startsWith("/saas")
+
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={`${geist.variable} ${geistMono.variable} font-sans bg-gray-50 dark:bg-[#080C14] text-gray-900 dark:text-white`}>
         <ThemeProvider attribute="class" defaultTheme="dark">
-          <SidebarProvider>
-            <AuthGuard>
-              <Sidebar />
-              <AppShell>{children}</AppShell>
-              <MobileNav />
-              <Toaster />
-            </AuthGuard>
-          </SidebarProvider>
+          {isSaasRoute ? children : <TenantShell>{children}</TenantShell>}
         </ThemeProvider>
       </body>
     </html>
