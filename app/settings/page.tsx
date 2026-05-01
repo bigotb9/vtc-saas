@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { supabase } from "@/lib/supabaseClient"
+import { useTenant } from "@/components/TenantProvider"
 
 export default function SettingsPage() {
+  const { tenant } = useTenant()
 
   const [avatar, setAvatar] = useState("/avatar.png")
   const [displayName, setDisplayName] = useState("")
@@ -66,7 +68,7 @@ export default function SettingsPage() {
 
     // construire URL publique correctement
     const avatarUrl =
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`
+      `${tenant?.supabase_url}/storage/v1/object/public/avatars/${filePath}`
 
     const { error: updateError } = await supabase
       .from("profiles")

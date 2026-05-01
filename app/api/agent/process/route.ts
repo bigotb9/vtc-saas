@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
-import { createClient } from "@supabase/supabase-js"
+import type { SupabaseClient } from "@supabase/supabase-js"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export const maxDuration = 60 // Vercel max pour plan Pro (évite les timeouts Claude Opus)
 
-const sb = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// `sb` est résolu au début de chaque POST via getTenantAdmin() (lit le header
+// x-tenant-slug posé par le proxy). Variable module-level utilisée par les
+// helpers via closure — le POST handler la set avant tout appel aux helpers.
+let sb: SupabaseClient
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -823,6 +824,7 @@ function buildUserContent(intent: IntentType, message: string, context: Record<s
 // ── Route principale ──────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
+    sb = await getTenantAdmin()
     const body = await req.json()
     const {
       message = "",

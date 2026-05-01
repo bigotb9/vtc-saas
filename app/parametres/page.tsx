@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useProfile } from "@/hooks/useProfile"
+import { useTenant } from "@/components/TenantProvider"
 import { ThemeToggle } from "@/components/theme-toggle"
 import {
   User, Lock, Upload, CheckCircle, AlertCircle, Users, Shield,
@@ -172,6 +173,7 @@ function SectionHeader({ icon: Icon, label, gradient }: { icon: React.ElementTyp
 // ── Page principale ────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const { profile, loading: profileLoading, isDirecteur } = useProfile()
+  const { tenant } = useTenant()
 
   // Onglet actif
   type Tab = "profil" | "securite" | "preferences" | "users" | "permissions" | "feries"
@@ -254,7 +256,7 @@ export default function SettingsPage() {
     const { data: { user } } = await supabase.auth.getUser(); if (!user) return
     const filePath = `${user.id}.png`
     await supabase.storage.from("avatars").upload(filePath, file, { upsert: true })
-    const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/${filePath}`
+    const url = `${tenant?.supabase_url}/storage/v1/object/public/avatars/${filePath}`
     await supabase.from("profiles").update({ avatar_url: url }).eq("id", user.id)
     setAvatar(url + "?t=" + Date.now())
   }

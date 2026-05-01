@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
-import { createClient } from "@supabase/supabase-js"
-
-const sb = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export async function GET() {
   try {
+    const sb = await getTenantAdmin()
     // ── 1. FETCH ALL DATA IN PARALLEL ─────────────────────────────────────
     const [
       { data: chauffeurs },
