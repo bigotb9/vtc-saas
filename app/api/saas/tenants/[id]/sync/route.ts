@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import fs from "fs/promises"
 import path from "path"
+import { createClient } from "@supabase/supabase-js"
 import { supabaseMaster } from "@/lib/supabaseMaster"
 import { supabaseManagement } from "@/lib/supabaseManagement"
 import { requireSaasAdmin } from "@/lib/saasAuth"
@@ -112,7 +113,65 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   }
   await logStep(tenant.id, "run_migration", "success", undefined, Date.now() - tMig)
 
-  // 5. Final → ready
+  // 5. Création du compte admin du client + invitation
+  //    On utilise le service_role du PROJET CLIENT (pas le master) pour invoke
+  //    auth.admin.inviteUserByEmail. L'utilisateur recevra un email avec un lien
+  //    pour définir son mot de passe et se connecter.
+  const tInv = Date.now()
+  await logStep(tenant.id, "create_admin_user", "started", `email=${tenant.email_admin}`)
+  let adminUserId: string | null = null
+  try {
+    const tenantClient = createClient(
+      `https://${tenant.supabase_project_ref}.supabase.co`,
+      service,
+      { auth: { persistSession: false } },
+    )
+    const { data: inv, error: invErr } = await tenantClient.auth.admin.inviteUserByEmail(
+      tenant.email_admin,
+      {
+        data: { invited_as: "tenant_admin", tenant_slug: tenant.slug },
+      },
+    )
+    if (invErr || !inv?.user) {
+      // Fallback : créer le user avec un mot de passe temporaire pour ne pas bloquer
+      const tempPassword = crypto.randomUUID()
+      const { data: created, error: cErr } = await tenantClient.auth.admin.createUser({
+        email:           tenant.email_admin,
+        password:        tempPassword,
+        email_confirm:   true,
+        user_metadata:   { invited_as: "tenant_admin", tenant_slug: tenant.slug },
+      })
+      if (cErr || !created?.user) throw new Error(`Invite + create user échoué: ${invErr?.message || cErr?.message}`)
+      adminUserId = created.user.id
+      await logStep(tenant.id, "create_admin_user", "success", `fallback createUser (invite a échoué: ${invErr?.message || "raison inconnue"}). Mot de passe temporaire généré, l'admin doit faire 'Mot de passe oublié' à la 1ère connexion.`, Date.now() - tInv)
+    } else {
+      adminUserId = inv.user.id
+      await logStep(tenant.id, "create_admin_user", "success", `invitation envoyée à ${tenant.email_admin}`, Date.now() - tInv)
+    }
+  } catch (e) {
+    const msg = (e as Error).message
+    await logStep(tenant.id, "create_admin_user", "failed", msg, Date.now() - tInv)
+    // On ne bloque pas tout le provisioning pour ça — le tenant peut ajouter un user manuellement
+    // dans l'admin Supabase, et le SaaS admin peut retry plus tard.
+  }
+
+  // 6. Insère la ligne profiles avec role=directeur (accès total)
+  if (adminUserId) {
+    const tProf = Date.now()
+    await logStep(tenant.id, "create_admin_profile", "started", `user=${adminUserId}`)
+    try {
+      await supabaseManagement.runSql(
+        tenant.supabase_project_ref,
+        `INSERT INTO public.profiles (id, role) VALUES ('${adminUserId}', 'directeur') ON CONFLICT (id) DO UPDATE SET role='directeur'`,
+      )
+      await logStep(tenant.id, "create_admin_profile", "success", undefined, Date.now() - tProf)
+    } catch (e) {
+      const msg = (e as Error).message
+      await logStep(tenant.id, "create_admin_profile", "failed", msg, Date.now() - tProf)
+    }
+  }
+
+  // 7. Final → ready
   const { data: finalTenant } = await supabaseMaster.from("tenants")
     .update({ provisioning_status: "ready", provisioning_error: null })
     .eq("id", tenant.id)
