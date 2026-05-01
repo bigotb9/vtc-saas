@@ -26,14 +26,34 @@ function isPublic(pathname: string): boolean {
   return PUBLIC_PREFIXES.some(p => pathname === p || pathname.startsWith(p + "/"))
 }
 
+/**
+ * Hôtes qui sont l'app elle-même (pas un tenant). Le sous-domaine ne doit
+ * PAS être interprété comme un slug pour ces hôtes — ils utilisent ?t= ou
+ * le cookie pour identifier le tenant.
+ *
+ * Couvre :
+ *   - les domaines vercel.app (deploy prod + previews)
+ *   - localhost (dev)
+ *   - tout domaine listé dans APP_DOMAINS (ex: "vtc-saas.com,app.vtc-saas.com")
+ */
+function isAppHost(hostname: string): boolean {
+  if (hostname === "localhost") return true
+  if (hostname.endsWith(".vercel.app")) return true
+  const explicit = (process.env.APP_DOMAINS || "").split(",").map(d => d.trim()).filter(Boolean)
+  if (explicit.includes(hostname)) return true
+  return false
+}
+
 function resolveSlugFromHost(host: string): string | null {
   if (!host) return null
   const hostname = host.split(":")[0]
+  // Si on est sur l'app elle-même (Vercel default, localhost, domaine principal),
+  // pas d'extraction sous-domaine — le tenant vient de ?t= ou cookie.
+  if (isAppHost(hostname)) return null
   const parts = hostname.split(".")
   if (parts.length < 2) return null
   if (parts[0] === "www") return null
-  if (parts[0] === "localhost") return null
-  if (parts.length === 2 && parts[1] === "localhost") return parts[0]
+  // Sous-domaine sur un domaine custom : acme.app.tondomaine.com → "acme"
   if (parts.length >= 3) return parts[0]
   return null
 }
