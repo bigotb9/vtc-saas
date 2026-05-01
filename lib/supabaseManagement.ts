@@ -81,6 +81,17 @@ export const supabaseManagement = {
     })
   },
 
+  /**
+   * Met à jour la config Auth d'un projet (site_url pour le redirect des emails,
+   * SMTP custom, etc.). Voir doc API pour tous les champs disponibles.
+   */
+  async updateAuthConfig(ref: string, config: Record<string, unknown>): Promise<unknown> {
+    return api(`/projects/${ref}/config/auth`, {
+      method: "PATCH",
+      body:   JSON.stringify(config),
+    })
+  },
+
   /** Attend que le projet passe en ACTIVE_HEALTHY. Timeout par défaut 5 min. */
   async waitUntilReady(ref: string, opts: { timeoutMs?: number; intervalMs?: number } = {}): Promise<SupabaseProject> {
     const timeout  = opts.timeoutMs  ?? 5 * 60 * 1000

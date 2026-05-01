@@ -113,6 +113,33 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   }
   await logStep(tenant.id, "run_migration", "success", undefined, Date.now() - tMig)
 
+  // 4bis. Configurer le site_url pour que les liens d'invitation/recovery
+  //       redirigent vers la bonne URL avec le slug du tenant.
+  //       Configurer aussi le SMTP custom si RESEND_API_KEY est défini.
+  const tCfg = Date.now()
+  await logStep(tenant.id, "update_auth_config", "started")
+  try {
+    const baseUrl = process.env.SITE_BASE_URL || "http://localhost:3000"
+    const siteUrl = `${baseUrl}?t=${tenant.slug}`
+    const config: Record<string, unknown> = {
+      site_url: siteUrl,
+      uri_allow_list: `${baseUrl},${baseUrl}/*`,
+    }
+    if (process.env.RESEND_API_KEY) {
+      config.smtp_host        = "smtp.resend.com"
+      config.smtp_port        = "465"
+      config.smtp_user        = "resend"
+      config.smtp_pass        = process.env.RESEND_API_KEY
+      config.smtp_admin_email = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev"
+      config.smtp_sender_name = "VTC SaaS"
+    }
+    await supabaseManagement.updateAuthConfig(tenant.supabase_project_ref, config)
+    await logStep(tenant.id, "update_auth_config", "success", `site_url=${siteUrl}, smtp=${process.env.RESEND_API_KEY ? "Resend" : "default"}`, Date.now() - tCfg)
+  } catch (e) {
+    await logStep(tenant.id, "update_auth_config", "failed", (e as Error).message, Date.now() - tCfg)
+    // Non-bloquant — l'admin peut configurer manuellement
+  }
+
   // 5. Création du compte admin du client + invitation
   //    On utilise le service_role du PROJET CLIENT (pas le master) pour invoke
   //    auth.admin.inviteUserByEmail. L'utilisateur recevra un email avec un lien
