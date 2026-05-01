@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 // GET /api/clients/versements?id_client=X
 export async function GET(req: NextRequest) {
   try {
+    const supabaseAdmin = await getTenantAdmin()
     const id_client = req.nextUrl.searchParams.get("id_client")
     if (!id_client) return NextResponse.json({ ok: false, error: "id_client manquant" }, { status: 400 })
 
@@ -28,6 +24,7 @@ export async function GET(req: NextRequest) {
 // POST /api/clients/versements — upsert (marquer payé)
 export async function POST(req: NextRequest) {
   try {
+    const supabaseAdmin = await getTenantAdmin()
     const body = await req.json()
     const { id_client, mois, montant, date_versement, notes } = body
 
@@ -54,6 +51,7 @@ export async function POST(req: NextRequest) {
 // DELETE /api/clients/versements?id_client=X&mois=2026-03
 export async function DELETE(req: NextRequest) {
   try {
+    const supabaseAdmin = await getTenantAdmin()
     const id_client = req.nextUrl.searchParams.get("id_client")
     const mois      = req.nextUrl.searchParams.get("mois")
     if (!id_client || !mois) return NextResponse.json({ ok: false, error: "Paramètres manquants" }, { status: 400 })

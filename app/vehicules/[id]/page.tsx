@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 import Link from "next/link"
 import Image from "next/image"
 import {
@@ -181,6 +181,7 @@ export default async function VehiculePage({
 }) {
   const { id } = await params
   const vehiculeId = parseInt(id)
+  const supabase = await getTenantAdmin()
 
   /* ── données véhicule ── */
   const { data: v } = await supabase

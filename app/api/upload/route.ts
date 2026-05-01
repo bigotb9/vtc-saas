@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 import { randomUUID } from "crypto"
-
-// Service role client — bypass RLS entièrement
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 const ALLOWED_BUCKETS  = new Set(["vehicules", "avatars", "chauffeurs"])
 const MAX_FILE_SIZE    = 10 * 1024 * 1024 // 10 MB
@@ -14,6 +8,7 @@ const ALLOWED_TYPES    = new Set(["image/jpeg", "image/png", "image/webp", "imag
 
 export async function POST(req: NextRequest) {
   try {
+    const supabaseAdmin = await getTenantAdmin()
     const formData = await req.formData()
     const file     = formData.get("file") as File | null
     const bucket   = (formData.get("bucket") as string) || "vehicules"

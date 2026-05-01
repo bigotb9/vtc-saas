@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export async function GET(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   const { searchParams } = new URL(req.url)
   const id_vehicule = searchParams.get("id_vehicule")
   const date_from   = searchParams.get("date_from")
@@ -22,6 +23,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   const body = await req.json()
   const {
     id_vehicule, immatriculation, date_realise,
@@ -132,6 +134,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   const { searchParams } = new URL(req.url)
   const id = searchParams.get("id")
   if (!id) return NextResponse.json({ error: "id requis" }, { status: 400 })

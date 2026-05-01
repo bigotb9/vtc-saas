@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 import VehiclesTable from "@/components/VehiclesTable"
 import VehiculesChart from "@/components/VehiculesChart"
 import Link from "next/link"
@@ -8,6 +8,7 @@ import { Car, CheckCircle, TrendingUp, DollarSign, Plus } from "lucide-react"
 
 export default async function VehiculesPage() {
 
+  const supabase = await getTenantAdmin()
   const { data: vehicules } = await supabase.from("vue_dashboard_vehicules").select("*")
   const { data: graph }     = await supabase.from("vue_ca_vehicule_jour").select("*").order("date_recette")
 

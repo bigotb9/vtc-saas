@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabaseAdmin"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 async function requireDirecteur(req: NextRequest) {
+  const supabaseAdmin = await getTenantAdmin()
   const token = req.headers.get("authorization")?.replace("Bearer ", "")
   if (!token) return null
   const { data: { user } } = await supabaseAdmin.auth.getUser(token)
@@ -13,6 +14,7 @@ async function requireDirecteur(req: NextRequest) {
 
 // GET — liste tous les utilisateurs (email + statut depuis auth.users)
 export async function GET(req: NextRequest) {
+  const supabaseAdmin = await getTenantAdmin()
   const caller = await requireDirecteur(req)
   if (!caller) return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
 
@@ -40,6 +42,7 @@ export async function GET(req: NextRequest) {
 
 // POST — créer un nouvel utilisateur
 export async function POST(req: NextRequest) {
+  const supabaseAdmin = await getTenantAdmin()
   const caller = await requireDirecteur(req)
   if (!caller) return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
 
@@ -75,6 +78,7 @@ export async function POST(req: NextRequest) {
 
 // PATCH — modifier rôle ou statut
 export async function PATCH(req: NextRequest) {
+  const supabaseAdmin = await getTenantAdmin()
   const caller = await requireDirecteur(req)
   if (!caller) return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
 
@@ -105,6 +109,7 @@ export async function PATCH(req: NextRequest) {
 
 // DELETE — désactiver
 export async function DELETE(req: NextRequest) {
+  const supabaseAdmin = await getTenantAdmin()
   const caller = await requireDirecteur(req)
   if (!caller) return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
 

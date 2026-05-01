@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export const maxDuration = 30
 
 export async function GET(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   try {
     const { searchParams } = new URL(req.url)
     const page    = Math.max(0, parseInt(searchParams.get("page") || "0"))

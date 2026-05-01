@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 // GET — affectation active d'un chauffeur ou d'un véhicule
 // ?id_chauffeur=X  ou  ?id_vehicule=X
 export async function GET(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   const { searchParams } = new URL(req.url)
   const id_chauffeur = searchParams.get("id_chauffeur")
   const id_vehicule  = searchParams.get("id_vehicule")
@@ -37,6 +38,7 @@ export async function GET(req: NextRequest) {
 // POST — créer une nouvelle affectation
 // Règles : un chauffeur → 1 seul véhicule / un véhicule → max 2 chauffeurs simultanés
 export async function POST(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   const { id_chauffeur, id_vehicule } = await req.json()
   if (!id_chauffeur || !id_vehicule)
     return NextResponse.json({ error: "id_chauffeur et id_vehicule requis" }, { status: 400 })
@@ -105,6 +107,7 @@ export async function POST(req: NextRequest) {
 // DELETE — terminer une affectation précise (id_chauffeur + id_vehicule)
 // ou toutes les affectations actives d'un chauffeur (id_chauffeur seul)
 export async function DELETE(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   const { id_chauffeur, id_vehicule } = await req.json()
   const today = new Date().toISOString().slice(0, 10)
 

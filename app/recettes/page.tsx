@@ -1,9 +1,10 @@
 export const dynamic = 'force-dynamic'
 
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 import RecettesPageClient from "@/components/RecettesPageClient"
 
 export default async function RecettesPage() {
+  const supabase = await getTenantAdmin()
   const { data: recettes } = await supabase
     .from("vue_recettes_vehicules")
     .select("*")

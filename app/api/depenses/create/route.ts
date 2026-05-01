@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { logActivity } from "@/lib/logActivity"
 import { requirePermission } from "@/lib/requirePermission"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export async function POST(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   try {
     const auth = await requirePermission(req, "manage_depenses")
     if (!auth.ok) return auth.response

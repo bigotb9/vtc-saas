@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export async function POST(req: NextRequest) {
+  const supabase = await getTenantAdmin()
 
   const rows = await req.json()
 

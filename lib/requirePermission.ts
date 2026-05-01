@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabaseAdmin"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 /**
  * Vérifie côté serveur que l'utilisateur courant a la permission demandée.
@@ -13,6 +13,7 @@ export async function requirePermission(req: NextRequest, action: string): Promi
   | { ok: true; user: { id: string; email?: string }; role: string }
   | { ok: false; response: NextResponse }
 > {
+  const supabaseAdmin = await getTenantAdmin()
   const token = req.headers.get("authorization")?.replace("Bearer ", "")
   if (!token) {
     return { ok: false, response: NextResponse.json(

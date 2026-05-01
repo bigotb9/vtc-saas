@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export const maxDuration = 30
 
@@ -17,6 +17,7 @@ type RawOrder = {
 }
 
 async function fetchAllOrders(): Promise<RawOrder[]> {
+  const supabase = await getTenantAdmin()
   const all: RawOrder[] = []
   const PAGE = 1000
   let from   = 0
@@ -35,6 +36,7 @@ async function fetchAllOrders(): Promise<RawOrder[]> {
 }
 
 export async function GET() {
+  const supabase = await getTenantAdmin()
   try {
     const orders = await fetchAllOrders()
 

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export async function GET() {
+  const supabase = await getTenantAdmin()
   const { data, error } = await supabase
     .from("chauffeurs")
     .select("id_chauffeur, nom, actif, photo")

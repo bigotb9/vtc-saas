@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabaseAdmin"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 async function requireAdmin(req: NextRequest) {
+  const supabaseAdmin = await getTenantAdmin()
   const token = req.headers.get("authorization")?.replace("Bearer ", "")
   if (!token) return null
   const { data: { user } } = await supabaseAdmin.auth.getUser(token)
@@ -12,6 +13,7 @@ async function requireAdmin(req: NextRequest) {
 }
 
 export async function GET() {
+  const supabaseAdmin = await getTenantAdmin()
   const { data, error } = await supabaseAdmin
     .from("jours_feries")
     .select("*")
@@ -21,6 +23,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const supabaseAdmin = await getTenantAdmin()
   const user = await requireAdmin(req)
   if (!user) return NextResponse.json({ ok: false, error: "Accès réservé aux admins" }, { status: 403 })
 
@@ -39,6 +42,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const supabaseAdmin = await getTenantAdmin()
   const user = await requireAdmin(req)
   if (!user) return NextResponse.json({ ok: false, error: "Accès réservé aux admins" }, { status: 403 })
 

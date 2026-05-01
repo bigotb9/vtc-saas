@@ -1,8 +1,9 @@
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 import CreateDepenseForm from "@/components/CreateDepenseForm"
 
 export default async function CreateDepensePage() {
 
+  const supabase = await getTenantAdmin()
   /* récupère la liste des véhicules pour le select */
   const { data: vehicules } = await supabase
     .from("vehicules")

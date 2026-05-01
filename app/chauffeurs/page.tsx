@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic'
 
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 import ChauffeursTable from "@/components/ChauffeursTable"
 import ChauffeursChart from "@/components/ChauffeursChart"
 import TopChauffeurChart from "@/components/TopChauffeurChart"
@@ -9,6 +9,7 @@ import { Users, UserCheck, UserX, Trophy, Plus } from "lucide-react"
 
 export default async function ChauffeursPage() {
 
+  const supabase = await getTenantAdmin()
   const { data: chauffeurs } = await supabase.from("vue_chauffeurs_vehicules").select("*")
   const { data: classement } = await supabase.from("classement_chauffeurs").select("*").order("ca", { ascending: false })
 

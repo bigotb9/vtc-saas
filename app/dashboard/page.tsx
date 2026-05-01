@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import Link from "next/link"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 import { PageHeader } from "@/components/PageHeader"
 import KpiCards from "@/components/KpiCards"
 import RecettesTable from "@/components/RecettesTable"
@@ -17,6 +17,8 @@ import TachesSuiviWidget from "@/components/TachesSuiviWidget"
 import SuiviVersementsWidget from "@/components/SuiviVersementsWidget"
 
 export default async function DashboardPage() {
+
+  const supabase = await getTenantAdmin()
 
   const { data: recettes } = await supabase
     .from("vue_recettes_vehicules")

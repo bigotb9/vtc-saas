@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type VehiculeRow = {
@@ -25,6 +25,7 @@ const BOYAH_EXPENSE_CAP = 50_000
 
 // ── GET /api/clients?mois=2026-03 ────────────────────────────────────────────
 export async function GET(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   try {
     const mois = req.nextUrl.searchParams.get("mois") || new Date().toISOString().slice(0, 7)
     const [year, month] = mois.split("-").map(Number)
@@ -134,6 +135,7 @@ export async function GET(req: NextRequest) {
 
 // ── POST /api/clients ─────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   try {
     const body = await req.json()
     const { error, data } = await supabase

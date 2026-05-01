@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export const maxDuration = 30
 
@@ -14,6 +14,7 @@ type OrderRow = {
 
 // Récupère TOUTES les commandes avec pagination (contourne la limite Supabase de 1000 lignes)
 async function fetchAllOrders(): Promise<OrderRow[]> {
+  const supabase = await getTenantAdmin()
   const all: OrderRow[] = []
   const PAGE = 1000
   let from   = 0
@@ -35,6 +36,7 @@ async function fetchAllOrders(): Promise<OrderRow[]> {
 }
 
 export async function GET() {
+  const supabase = await getTenantAdmin()
   try {
     const now      = new Date()
     const weekAgo  = new Date(now.getTime() - 7  * 86400000)

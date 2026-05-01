@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabaseAdmin"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 async function requireDirecteur(req: NextRequest) {
+  const supabaseAdmin = await getTenantAdmin()
   const token = req.headers.get("authorization")?.replace("Bearer ", "")
   if (!token) return null
   const { data: { user } } = await supabaseAdmin.auth.getUser(token)
@@ -12,6 +13,7 @@ async function requireDirecteur(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const supabaseAdmin = await getTenantAdmin()
   const caller = await requireDirecteur(req)
   if (!caller) return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
 

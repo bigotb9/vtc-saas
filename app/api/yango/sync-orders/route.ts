@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export const maxDuration = 60
 
@@ -7,6 +7,7 @@ const PAGE_SIZE  = 100
 const MAX_ORDERS = 15000
 
 export async function POST(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   try {
     const ordersUrl = process.env.YANGO_ORDERS_URL
     const apiKey    = process.env.YANGO_ORDERS_API_KEY

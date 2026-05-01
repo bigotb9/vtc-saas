@@ -1,4 +1,4 @@
-import { supabaseAdmin } from "@/lib/supabaseAdmin"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 /**
  * Enregistre une action dans activity_logs.
@@ -15,6 +15,7 @@ export async function logActivity({
   entity?: string | null
   details?: Record<string, unknown> | null
 }) {
+  const supabaseAdmin = await getTenantAdmin()
   try {
     const { data: { user } } = await supabaseAdmin.auth.getUser(token)
     if (!user) return

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabase } from "@/lib/supabaseClient"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 export async function PATCH(req: NextRequest) {
+  const supabase = await getTenantAdmin()
   const { id, ...fields } = await req.json()
 
   if (!id) {

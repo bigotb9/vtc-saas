@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { supabaseAdmin as sb } from "@/lib/supabaseAdmin"
+import { getTenantAdmin } from "@/lib/supabaseTenant"
 
 const TOLERANCE = 0.99
 
@@ -45,6 +45,7 @@ async function fetchAll<T>(builder: () => any): Promise<T[]> {
 }
 
 export async function GET(req: NextRequest) {
+  const sb = await getTenantAdmin()
   try {
     const { searchParams } = new URL(req.url)
     const dateFrom = searchParams.get("from") || new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10)
