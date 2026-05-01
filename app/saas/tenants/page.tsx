@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabaseMasterClient as sb } from "@/lib/supabaseMasterClient"
-import { Plus, ExternalLink, Loader2, CheckCircle2, AlertCircle, Clock } from "lucide-react"
+import { Plus, ExternalLink, Loader2, CheckCircle2, AlertCircle, Clock, RefreshCw, Trash2, Eye } from "lucide-react"
 
 type Tenant = {
   id:                   string
@@ -42,6 +42,47 @@ export default function TenantsListPage() {
     setTenants(tenants || [])
   }
   useEffect(() => { load() }, [])
+
+  const onRetry = async (id: string) => {
+    if (!confirm("Relancer le provisioning ? Le schéma sera redéployé from scratch.")) return
+    const { data: sess } = await sb.auth.getSession()
+    if (!sess.session) return
+    const res = await fetch(`/api/saas/tenants/${id}/retry`, {
+      method:  "POST",
+      headers: { Authorization: `Bearer ${sess.session.access_token}` },
+    })
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}))
+      alert(j.error || "Erreur retry")
+      return
+    }
+    load()
+  }
+
+  const onDelete = async (t: Tenant) => {
+    const deleteProject = confirm(
+      `⚠️ Supprimer le tenant "${t.nom}" ?\n\n` +
+      `OK = supprimer aussi le projet Supabase (irréversible).\n` +
+      `Annuler = supprimer la ligne master uniquement (le projet Supabase reste actif).`,
+    )
+    if (!deleteProject) {
+      const onlyMaster = confirm(`Confirmer suppression du tenant "${t.nom}" SANS supprimer le projet Supabase ?`)
+      if (!onlyMaster) return
+    }
+    const { data: sess } = await sb.auth.getSession()
+    if (!sess.session) return
+    const url = `/api/saas/tenants/${t.id}${deleteProject ? "?delete_project=true" : ""}`
+    const res = await fetch(url, {
+      method:  "DELETE",
+      headers: { Authorization: `Bearer ${sess.session.access_token}` },
+    })
+    const j = await res.json().catch(() => ({}))
+    if (!res.ok) { alert(j.error || "Erreur suppression"); return }
+    if (deleteProject && j.project_deleted && !j.project_deleted.ok) {
+      alert(`Tenant supprimé en master mais la suppression du projet Supabase a échoué : ${j.project_deleted.message}\n\nÀ supprimer manuellement.`)
+    }
+    load()
+  }
 
   // Polling : pour tout tenant non-ready/non-failed, appelle /sync toutes les 6s.
   // /sync vérifie l'état du projet Supabase et lance la migration si prêt.
@@ -97,6 +138,7 @@ export default function TenantsListPage() {
                 <th className="px-4 py-3">État</th>
                 <th className="px-4 py-3">Projet</th>
                 <th className="px-4 py-3">Créé</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -126,6 +168,27 @@ export default function TenantsListPage() {
                       </a>
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-400">{new Date(t.created_at).toLocaleDateString("fr-FR")}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <Link href={`/saas/tenants/${t.id}`}
+                          title="Détail"
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10">
+                          <Eye size={13} />
+                        </Link>
+                        {t.provisioning_status === "failed" && (
+                          <button onClick={() => onRetry(t.id)}
+                            title="Retry provisioning"
+                            className="p-1.5 rounded-lg text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10">
+                            <RefreshCw size={13} />
+                          </button>
+                        )}
+                        <button onClick={() => onDelete(t)}
+                          title="Supprimer"
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10">
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 )
               })}
