@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic"
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabaseClient"
 import { useRouter } from "next/navigation"
+import { useTenant } from "@/components/TenantProvider"
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Car, TrendingUp, Users, Zap } from "lucide-react"
 import dynamicImport from "next/dynamic"
 
@@ -19,6 +20,9 @@ type LiveStats = {
 
 export default function LoginPage() {
   const router = useRouter()
+  const { tenant } = useTenant()
+  const brandName  = tenant?.nom || "VTC Platform"
+  const brandInitial = (tenant?.nom || "V").trim().charAt(0).toUpperCase()
   const [email,    setEmail]    = useState("")
   const [password, setPassword] = useState("")
   const [showPwd,  setShowPwd]  = useState(false)
@@ -93,10 +97,10 @@ export default function LoginPage() {
           {/* Top — Brand */}
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <span className="text-white font-black text-base">B</span>
+              <span className="text-white font-black text-base">{brandInitial}</span>
             </div>
             <div>
-              <p className="text-white font-bold text-sm leading-none">BOYAH GROUP</p>
+              <p className="text-white font-bold text-sm leading-none uppercase">{brandName}</p>
               <p className="text-gray-500 text-[10px] tracking-widest uppercase mt-0.5">VTC Platform</p>
             </div>
           </div>
@@ -155,9 +159,9 @@ export default function LoginPage() {
           {/* Mobile logo (hidden on lg) */}
           <div className="text-center mb-8 lg:hidden">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-xl shadow-indigo-500/30 mb-3">
-              <span className="text-white font-black text-lg">B</span>
+              <span className="text-white font-black text-lg">{brandInitial}</span>
             </div>
-            <h1 className="text-xl font-bold text-white">BOYAH GROUP</h1>
+            <h1 className="text-xl font-bold text-white uppercase">{brandName}</h1>
             <p className="text-xs text-gray-500 mt-1 tracking-widest uppercase">VTC Platform</p>
           </div>
 
@@ -223,7 +227,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-xs text-gray-700 mt-6">
-            © {new Date().getFullYear()} BOYAH GROUP · Plateforme VTC
+            © {new Date().getFullYear()} <span className="uppercase">{brandName}</span> · Plateforme VTC
           </p>
 
         </div>

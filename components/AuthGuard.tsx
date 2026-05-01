@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
+import { useTenant } from "@/components/TenantProvider"
 import Image from "next/image"
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   const router = useRouter()
+  const { tenant } = useTenant()
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -48,13 +50,13 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
           {/* Logo avec pulse */}
           <div className="relative">
             <div className="w-20 h-20 rounded-full overflow-hidden animate-pulse">
-              <Image src="/logo.png" alt="Boyah Group" width={80} height={80} className="object-cover" priority />
+              <Image src="/logo.png" alt={tenant?.nom || "VTC Platform"} width={80} height={80} className="object-cover" priority />
             </div>
             {/* Ring tournant */}
             <div className="absolute inset-[-6px] rounded-full border-2 border-transparent border-t-indigo-500 border-r-indigo-500/30 animate-spin" />
           </div>
           <div className="flex flex-col items-center gap-1">
-            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Boyah Group</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{tenant?.nom || "VTC Platform"}</p>
             <p className="text-xs text-gray-400 dark:text-gray-600">Chargement en cours...</p>
           </div>
         </div>

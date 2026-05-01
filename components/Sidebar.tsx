@@ -12,6 +12,7 @@ import {
   LogOut, Building2, UserCheck, Activity, PanelLeftClose, PanelLeftOpen, MapPin
 } from "lucide-react"
 import { useProfile } from "@/hooks/useProfile"
+import { useTenant } from "@/components/TenantProvider"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSidebar } from "@/lib/SidebarContext"
 
@@ -139,6 +140,7 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
   const navRef   = useRef<HTMLDivElement>(null)
   const { collapsed, toggle } = useSidebar()
   const { isDirecteur, can } = useProfile()
+  const { tenant } = useTenant()
 
   type AuthUser = { email?: string; user_metadata?: { name?: string; display_name?: string } }
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -191,9 +193,9 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
             exit={{ opacity: 0 }}
             className="flex-1 flex items-center justify-between min-w-0"
           >
-            <div>
-              <p className="text-[13px] font-bold text-gray-900 dark:text-white leading-tight tracking-tight">VTC Dashboard</p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-600 font-medium tracking-wider uppercase">Boyah Group</p>
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold text-gray-900 dark:text-white leading-tight tracking-tight truncate">{tenant?.nom || "VTC Dashboard"}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-600 font-medium tracking-wider uppercase">VTC Platform</p>
             </div>
             <button onClick={toggle} title="Réduire"
               className="p-1 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 transition flex-shrink-0">
