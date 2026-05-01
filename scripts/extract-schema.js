@@ -317,6 +317,19 @@ async function main() {
     out += '\n';
   }
 
+  // ────── Grants Supabase (toujours inclus) ──────
+  // Sans ces GRANT, les rôles `anon` et `authenticated` n'ont aucun droit
+  // sur les tables, et même une policy RLS valide est rejetée avec
+  // "permission denied for table X". Indispensable.
+  out += '-- ────────── Grants Supabase (anon, authenticated, service_role) ──────────\n\n';
+  out += 'GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;\n';
+  out += 'GRANT ALL ON ALL TABLES    IN SCHEMA public TO anon, authenticated, service_role;\n';
+  out += 'GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;\n';
+  out += 'GRANT ALL ON ALL ROUTINES  IN SCHEMA public TO anon, authenticated, service_role;\n';
+  out += 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES    TO anon, authenticated, service_role;\n';
+  out += 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;\n';
+  out += 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES  TO anon, authenticated, service_role;\n';
+
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, out);
   console.log('---');

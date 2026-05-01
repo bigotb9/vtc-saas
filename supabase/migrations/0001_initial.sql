@@ -864,3 +864,14 @@ CREATE POLICY "perms_select" ON public."role_permissions" FOR SELECT TO authenti
 CREATE POLICY "authenticated_all_vehicules" ON public."vehicules" TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "authenticated_all_versements" ON public."versements_clients" TO public USING ((auth.role() = 'authenticated'::text));
 
+
+-- ────────── Grants Supabase (anon, authenticated, service_role) ──────────
+-- Sans ces GRANT, même avec une policy RLS valide, Postgres rejette toute
+-- requête avec "permission denied for table X". Indispensable.
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES    IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES  IN SCHEMA public TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES    TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES  TO anon, authenticated, service_role;
