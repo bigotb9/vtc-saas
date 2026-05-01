@@ -57,6 +57,33 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ tenant, done: false, message: `status=${project.status}` })
   }
 
+  // ────── Lock optimiste : claim atomique du tenant pour cette exécution ──────
+  // Le polling appelle /sync toutes les 6s. Sans verrou, plusieurs invocations
+  // concurrentes ré-exécutent la migration et échouent ("relation already exists").
+  // On bascule status='creating'→'migrating' UNIQUEMENT si le row matche encore
+  // 'creating' (atomique côté Postgres). Si quelqu'un a déjà claim, on early-return.
+  const { data: claimed, error: claimErr } = await supabaseMaster
+    .from("tenants")
+    .update({ provisioning_status: "migrating" })
+    .eq("id", id)
+    .eq("provisioning_status", "creating")
+    .select()
+    .maybeSingle()
+
+  if (claimErr) {
+    return NextResponse.json({ tenant, done: false, message: claimErr.message })
+  }
+  if (!claimed) {
+    // Quelqu'un d'autre est déjà sur le coup OU on est déjà passé à un état avancé.
+    // Re-fetch pour informer l'appelant.
+    const { data: latest } = await supabaseMaster.from("tenants").select("*").eq("id", id).single()
+    return NextResponse.json({
+      tenant: latest || tenant,
+      done: latest?.provisioning_status === "ready" || latest?.provisioning_status === "failed",
+      message: `claim échoué (status=${latest?.provisioning_status})`,
+    })
+  }
+
   // 2. Projet ACTIVE_HEALTHY → on récupère les keys
   const t0 = Date.now()
   await logStep(tenant.id, "fetch_api_keys", "started")

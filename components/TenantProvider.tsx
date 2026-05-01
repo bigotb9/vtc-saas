@@ -14,6 +14,7 @@ export type TenantInfo = {
   module_wave:        boolean
   module_ai_insights: boolean
   plan:               string
+  logo_url:           string | null
 }
 
 type TenantState = {

@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabaseMasterClient as sb } from "@/lib/supabaseMasterClient"
-import { ArrowLeft, Plus, Loader2, Info } from "lucide-react"
+import { ArrowLeft, Plus, Loader2, Info, Upload, X } from "lucide-react"
 
 export default function NewTenantPage() {
   const router = useRouter()
@@ -16,9 +16,22 @@ export default function NewTenantPage() {
   const [moduleYango, setModuleYango] = useState(true)
   const [moduleWave, setModuleWave]   = useState(true)
   const [moduleAi, setModuleAi]       = useState(true)
+  const [logoFile, setLogoFile]       = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
 
   const [submitting, setSubmitting] = useState(false)
   const [error, setError]           = useState<string | null>(null)
+
+  const onLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    if (f.size > 5 * 1024 * 1024) { setError("Logo > 5 Mo"); return }
+    setError(null)
+    setLogoFile(f)
+    const reader = new FileReader()
+    reader.onload = ev => setLogoPreview(ev.target?.result as string)
+    reader.readAsDataURL(f)
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,10 +40,12 @@ export default function NewTenantPage() {
 
     const { data: sess } = await sb.auth.getSession()
     if (!sess.session) { setError("Session expirée"); setSubmitting(false); return }
+    const token = sess.session.access_token
 
+    // 1. Crée le tenant (le provisioning du projet Supabase démarre)
     const res = await fetch("/api/saas/tenants", {
       method:  "POST",
-      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${sess.session.access_token}` },
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
       body:    JSON.stringify({
         nom, slug, email_admin: emailAdmin, plan, region,
         module_yango: moduleYango, module_wave: moduleWave, module_ai_insights: moduleAi,
@@ -42,6 +57,23 @@ export default function NewTenantPage() {
       setSubmitting(false)
       return
     }
+
+    // 2. Upload logo si fourni (en parallèle du provisioning, peu importe l'ordre)
+    if (logoFile && json.tenant?.id) {
+      const fd = new FormData()
+      fd.append("file", logoFile)
+      const upRes = await fetch(`/api/saas/tenants/${json.tenant.id}/logo`, {
+        method:  "POST",
+        headers: { "Authorization": `Bearer ${token}` },
+        body:    fd,
+      })
+      if (!upRes.ok) {
+        const e = await upRes.json().catch(() => ({}))
+        console.warn("Upload logo a échoué :", e.error)
+        // Non-bloquant — l'admin peut re-uploader depuis la page détail
+      }
+    }
+
     router.push("/saas/tenants")
   }
 
@@ -77,6 +109,28 @@ export default function NewTenantPage() {
 
         <Field label="Email admin du client" hint="Recevra un email d'invitation pour définir son mot de passe">
           <input required type="email" value={emailAdmin} onChange={e => setEmailAdmin(e.target.value)} placeholder="patron@acme.com" className={inputCls} />
+        </Field>
+
+        <Field label="Logo (optionnel)" hint="PNG / JPG / WebP / SVG, max 5 Mo. Affiché dans la sidebar et sur la page de login du client.">
+          <div className="flex items-center gap-3">
+            <label className="relative flex items-center justify-center w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 dark:border-[#1E2D45] bg-gray-50 dark:bg-[#080F1E] cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/5 transition overflow-hidden">
+              {logoPreview ? (
+                <img src={logoPreview} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <Upload size={18} className="text-gray-400" />
+              )}
+              <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={onLogoChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+            </label>
+            {logoFile && (
+              <div className="flex-1 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 truncate">
+                <span className="truncate">{logoFile.name} · {(logoFile.size / 1024).toFixed(0)} Ko</span>
+                <button type="button" onClick={() => { setLogoFile(null); setLogoPreview(null) }}
+                  className="ml-2 p-1 rounded hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500">
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+          </div>
         </Field>
 
         <div className="grid grid-cols-2 gap-3">

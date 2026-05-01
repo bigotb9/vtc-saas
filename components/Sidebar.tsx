@@ -184,7 +184,11 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
           onClick={toggle}
           title={collapsed ? "Développer" : "Réduire"}
         >
-          <Image src="/logo.png" alt="Logo" width={22} height={22} />
+          {tenant?.logo_url ? (
+            <img src={tenant.logo_url} alt={tenant.nom} className="w-9 h-9 object-cover" />
+          ) : (
+            <span className="text-white font-black text-base">{(tenant?.nom || "V").trim().charAt(0).toUpperCase()}</span>
+          )}
         </motion.div>
         {!collapsed && (
           <motion.div

@@ -23,6 +23,7 @@ type Tenant = {
   module_yango:         boolean
   module_wave:          boolean
   module_ai_insights:   boolean
+  logo_url:             string | null
   created_at:           string
   updated_at:           string
 }
@@ -141,6 +142,31 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
 
       {/* Header */}
       <div className="bg-white dark:bg-[#0D1424] rounded-2xl border border-gray-100 dark:border-[#1E2D45] p-5 flex items-start gap-4">
+        <label className="relative w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 dark:border-[#1E2D45] bg-gray-50 dark:bg-[#080F1E] cursor-pointer hover:border-indigo-400 transition overflow-hidden flex-shrink-0 flex items-center justify-center">
+          {tenant.logo_url ? (
+            <img src={tenant.logo_url} alt={tenant.nom} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-2xl font-black text-gray-300 dark:text-gray-700">{tenant.nom.charAt(0).toUpperCase()}</span>
+          )}
+          <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            onChange={async (e) => {
+              const f = e.target.files?.[0]
+              if (!f) return
+              if (f.size > 5 * 1024 * 1024) { alert("Logo > 5 Mo"); return }
+              const { data: sess } = await sb.auth.getSession()
+              if (!sess.session) return
+              const fd = new FormData()
+              fd.append("file", f)
+              const res = await fetch(`/api/saas/tenants/${tenant.id}/logo`, {
+                method:  "POST",
+                headers: { "Authorization": `Bearer ${sess.session.access_token}` },
+                body:    fd,
+              })
+              if (!res.ok) { const j = await res.json().catch(() => ({})); alert(j.error || "Upload échoué"); return }
+              load()
+            }}
+            className="absolute inset-0 opacity-0 cursor-pointer" />
+        </label>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight truncate">{tenant.nom}</h1>

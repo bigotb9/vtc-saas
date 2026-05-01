@@ -96,8 +96,12 @@ export default function LoginPage() {
 
           {/* Top — Brand */}
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <span className="text-white font-black text-base">{brandInitial}</span>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 overflow-hidden">
+              {tenant?.logo_url ? (
+                <img src={tenant.logo_url} alt={brandName} className="w-9 h-9 object-cover" />
+              ) : (
+                <span className="text-white font-black text-base">{brandInitial}</span>
+              )}
             </div>
             <div>
               <p className="text-white font-bold text-sm leading-none uppercase">{brandName}</p>
@@ -158,8 +162,12 @@ export default function LoginPage() {
 
           {/* Mobile logo (hidden on lg) */}
           <div className="text-center mb-8 lg:hidden">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-xl shadow-indigo-500/30 mb-3">
-              <span className="text-white font-black text-lg">{brandInitial}</span>
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-xl shadow-indigo-500/30 mb-3 overflow-hidden">
+              {tenant?.logo_url ? (
+                <img src={tenant.logo_url} alt={brandName} className="w-12 h-12 object-cover" />
+              ) : (
+                <span className="text-white font-black text-lg">{brandInitial}</span>
+              )}
             </div>
             <h1 className="text-xl font-bold text-white uppercase">{brandName}</h1>
             <p className="text-xs text-gray-500 mt-1 tracking-widest uppercase">VTC Platform</p>

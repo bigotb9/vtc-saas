@@ -21,6 +21,7 @@ export type TenantConfig = {
   module_wave:          boolean
   module_ai_insights:   boolean
   provisioning_status:  string
+  logo_url:             string | null
 }
 
 const CACHE = new Map<string, { config: TenantConfig; expiresAt: number }>()

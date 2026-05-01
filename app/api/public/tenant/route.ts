@@ -25,5 +25,6 @@ export async function GET(req: NextRequest) {
     module_wave:        tenant.module_wave,
     module_ai_insights: tenant.module_ai_insights,
     plan:               tenant.plan,
+    logo_url:           tenant.logo_url,
   })
 }
