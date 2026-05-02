@@ -62,13 +62,29 @@ export function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl
   if (isPublic(pathname)) return NextResponse.next()
 
-  let slug = resolveSlugFromHost(req.headers.get("host") || "")
+  // 1. Custom domain : si l'hostname correspond à un tenant.custom_domain,
+  //    on pose un header spécial que les routes server-side résoudront.
+  //    (lookup async impossible dans le proxy edge — on délègue à l'app)
+  const hostname = (req.headers.get("host") || "").split(":")[0]
+  let slug: string | null = null
+  if (hostname && !isAppHost(hostname)) {
+    // Pourrait être un custom_domain OU un subdomain — on laisse le header
+    // passer, et le serveur fera le lookup. Pour l'instant on tente le
+    // subdomain extraction comme fallback.
+    slug = resolveSlugFromHost(hostname)
+  }
+
+  // 2. Query string ?t= (override pour dev / tests)
   const qSlug = searchParams.get("t")
   if (qSlug) slug = qSlug
+
+  // 3. Cookie déjà posé
   if (!slug) {
     const cookieSlug = req.cookies.get("tenant_slug")?.value
     if (cookieSlug) slug = cookieSlug
   }
+
+  // 4. Fallback dev
   if (!slug) {
     slug = process.env.NEXT_PUBLIC_DEV_TENANT_SLUG || null
   }

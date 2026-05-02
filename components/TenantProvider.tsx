@@ -15,6 +15,8 @@ export type TenantInfo = {
   module_ai_insights: boolean
   plan:               string
   logo_url:           string | null
+  feature_flags:      Record<string, boolean>
+  config:             Record<string, unknown>
 }
 
 type TenantState = {

@@ -22,6 +22,10 @@ export type TenantConfig = {
   module_ai_insights:   boolean
   provisioning_status:  string
   logo_url:             string | null
+  feature_flags:        Record<string, boolean>     // ex: { versement_mensuel: true, beta_ui: false }
+  config:               Record<string, unknown>     // ex: { theme_color: "#FF4500", seuil_alerte: 80 }
+  custom_domain:        string | null               // ex: "flotte.acme.ci"
+  notes:                string | null               // notes admin SaaS internes
 }
 
 const CACHE = new Map<string, { config: TenantConfig; expiresAt: number }>()

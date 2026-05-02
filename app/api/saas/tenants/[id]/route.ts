@@ -30,6 +30,50 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   return NextResponse.json({ tenant: tenantRes.data, logs: logsRes.data || [] })
 }
 
+/**
+ * PATCH /api/saas/tenants/[id]
+ *
+ * Met à jour les champs configurables d'un tenant (par l'admin SaaS).
+ * Champs whitelist autorisés à la modification :
+ *   - nom, plan, statut
+ *   - module_yango, module_wave, module_ai_insights
+ *   - feature_flags, config, custom_domain, notes
+ *
+ * Tout autre champ (slug, supabase_*, provisioning_*) est ignoré.
+ */
+const PATCHABLE = new Set([
+  "nom", "plan", "statut",
+  "module_yango", "module_wave", "module_ai_insights",
+  "feature_flags", "config", "custom_domain", "notes",
+])
+
+export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
+  const admin = await requireSaasAdmin(req)
+  if (admin instanceof NextResponse) return admin
+
+  const { id } = await ctx.params
+  const body = await req.json().catch(() => ({}))
+
+  // Filtre : on ne garde que les champs autorisés
+  const update: Record<string, unknown> = {}
+  for (const k of Object.keys(body)) {
+    if (PATCHABLE.has(k)) update[k] = body[k]
+  }
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: "aucun champ valide" }, { status: 400 })
+  }
+
+  const { data: existing } = await supabaseMaster.from("tenants").select("slug").eq("id", id).maybeSingle()
+  if (!existing) return NextResponse.json({ error: "tenant introuvable" }, { status: 404 })
+
+  const { data, error } = await supabaseMaster.from("tenants").update(update).eq("id", id).select().single()
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Invalide le cache pour que les prochaines requêtes voient la nouvelle config
+  invalidateTenantCache(existing.slug)
+  return NextResponse.json({ tenant: data })
+}
+
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const admin = await requireSaasAdmin(req)
   if (admin instanceof NextResponse) return admin

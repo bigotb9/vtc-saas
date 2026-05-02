@@ -7,6 +7,7 @@ import { supabaseMasterClient as sb } from "@/lib/supabaseMasterClient"
 import {
   ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle, Clock,
   RefreshCw, Trash2, Mail, Globe, Hash, Calendar, Package, Boxes,
+  Settings, Save, Plus, X as XIcon, Code,
 } from "lucide-react"
 
 type Tenant = {
@@ -24,6 +25,10 @@ type Tenant = {
   module_wave:          boolean
   module_ai_insights:   boolean
   logo_url:             string | null
+  feature_flags:        Record<string, boolean>
+  config:               Record<string, unknown>
+  custom_domain:        string | null
+  notes:                string | null
   created_at:           string
   updated_at:           string
 }
@@ -233,6 +238,9 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
+      {/* Configuration éditable */}
+      <ConfigEditor tenant={tenant} onSaved={load} />
+
       {/* Logs */}
       <div className="bg-white dark:bg-[#0D1424] rounded-2xl border border-gray-100 dark:border-[#1E2D45] p-5">
         <div className="flex items-center justify-between mb-3">
@@ -279,5 +287,184 @@ function ModuleBadge({ label, on }: { label: string; on: boolean }) {
       ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
       : "bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-gray-600"
     }`}>{label}</span>
+  )
+}
+
+/**
+ * Éditeur de la configuration spécifique à ce tenant.
+ * Modules natifs (Yango, Wave, AI), feature_flags custom, config JSON,
+ * domaine custom, notes admin. Tous patchés via PATCH /api/saas/tenants/[id].
+ */
+function ConfigEditor({ tenant, onSaved }: { tenant: Tenant; onSaved: () => void }) {
+  const [moduleYango, setModuleYango] = useState(tenant.module_yango)
+  const [moduleWave, setModuleWave]   = useState(tenant.module_wave)
+  const [moduleAi, setModuleAi]       = useState(tenant.module_ai_insights)
+  const [flags, setFlags]             = useState<Record<string, boolean>>(tenant.feature_flags || {})
+  const [configText, setConfigText]   = useState(JSON.stringify(tenant.config || {}, null, 2))
+  const [customDomain, setCustomDomain] = useState(tenant.custom_domain || "")
+  const [notes, setNotes]             = useState(tenant.notes || "")
+  const [newFlagName, setNewFlagName] = useState("")
+  const [saving, setSaving]           = useState(false)
+  const [err, setErr]                 = useState<string | null>(null)
+  const [ok, setOk]                   = useState(false)
+
+  // Reset si le tenant change (auto-refresh)
+  useEffect(() => {
+    setModuleYango(tenant.module_yango)
+    setModuleWave(tenant.module_wave)
+    setModuleAi(tenant.module_ai_insights)
+    setFlags(tenant.feature_flags || {})
+    setConfigText(JSON.stringify(tenant.config || {}, null, 2))
+    setCustomDomain(tenant.custom_domain || "")
+    setNotes(tenant.notes || "")
+  }, [tenant.id])
+
+  const save = async () => {
+    setErr(null); setOk(false); setSaving(true)
+    let parsedConfig: Record<string, unknown>
+    try {
+      parsedConfig = JSON.parse(configText || "{}")
+      if (typeof parsedConfig !== "object" || Array.isArray(parsedConfig)) throw new Error("Config doit être un objet JSON")
+    } catch (e) {
+      setErr(`JSON invalide: ${(e as Error).message}`)
+      setSaving(false)
+      return
+    }
+    const { data: sess } = await sb.auth.getSession()
+    if (!sess.session) { setErr("Session expirée"); setSaving(false); return }
+    const res = await fetch(`/api/saas/tenants/${tenant.id}`, {
+      method:  "PATCH",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${sess.session.access_token}` },
+      body:    JSON.stringify({
+        module_yango:       moduleYango,
+        module_wave:        moduleWave,
+        module_ai_insights: moduleAi,
+        feature_flags:      flags,
+        config:             parsedConfig,
+        custom_domain:      customDomain.trim() || null,
+        notes:              notes.trim() || null,
+      }),
+    })
+    setSaving(false)
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}))
+      setErr(j.error || "Erreur sauvegarde")
+      return
+    }
+    setOk(true)
+    setTimeout(() => setOk(false), 2500)
+    onSaved()
+  }
+
+  const addFlag = () => {
+    const name = newFlagName.trim().replace(/[^a-z0-9_]/gi, "_").toLowerCase()
+    if (!name) return
+    setFlags({ ...flags, [name]: true })
+    setNewFlagName("")
+  }
+  const removeFlag = (k: string) => {
+    const next = { ...flags }
+    delete next[k]
+    setFlags(next)
+  }
+
+  return (
+    <div className="bg-white dark:bg-[#0D1424] rounded-2xl border border-gray-100 dark:border-[#1E2D45] p-5 space-y-5">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+          <Settings size={12} />Configuration & Modules
+        </h2>
+        <div className="flex items-center gap-2">
+          {ok && <span className="text-xs text-emerald-500">✓ Sauvegardé</span>}
+          {err && <span className="text-xs text-red-500 max-w-xs truncate" title={err}>{err}</span>}
+          <button onClick={save} disabled={saving}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold disabled:opacity-50">
+            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}Sauvegarder
+          </button>
+        </div>
+      </div>
+
+      {/* Modules natifs */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Modules natifs</p>
+        <div className="grid grid-cols-3 gap-2">
+          <ConfigToggle label="Yango"        value={moduleYango} onChange={setModuleYango} />
+          <ConfigToggle label="Wave"         value={moduleWave}  onChange={setModuleWave} />
+          <ConfigToggle label="AI Insights"  value={moduleAi}    onChange={setModuleAi} />
+        </div>
+      </div>
+
+      {/* Feature flags custom */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Feature flags custom</p>
+        <p className="text-[10px] text-gray-400 mb-2">Toggles pour activer du code spécifique à ce client. Lus côté app via <code className="font-mono bg-gray-100 dark:bg-white/5 px-1 rounded">tenant.feature_flags.X</code></p>
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          {Object.entries(flags).map(([k, v]) => (
+            <div key={k} className="flex items-center gap-1">
+              <ConfigToggle label={k} value={v} onChange={(nv) => setFlags({ ...flags, [k]: nv })} />
+              <button type="button" onClick={() => removeFlag(k)}
+                className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-500/10 text-red-400 shrink-0" title="Supprimer">
+                <XIcon size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <input value={newFlagName} onChange={e => setNewFlagName(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addFlag() } }}
+            placeholder="nouveau_flag" className={`${inputCls} font-mono text-xs`} />
+          <button type="button" onClick={addFlag}
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-xs font-medium shrink-0">
+            <Plus size={12} />Ajouter
+          </button>
+        </div>
+      </div>
+
+      {/* Config JSON */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1">
+          <Code size={11} />Config (JSON)
+        </p>
+        <p className="text-[10px] text-gray-400 mb-2">Valeurs arbitraires. Ex: <code className="font-mono bg-gray-100 dark:bg-white/5 px-1 rounded">{`{"theme_color": "#FF4500", "seuil_alerte": 80}`}</code></p>
+        <textarea value={configText} onChange={e => setConfigText(e.target.value)}
+          rows={5} spellCheck={false}
+          className={`${inputCls} font-mono text-xs leading-relaxed`} />
+      </div>
+
+      {/* Custom domain */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1">
+          <Globe size={11} />Domaine custom
+        </p>
+        <p className="text-[10px] text-gray-400 mb-2">Ex: <code className="font-mono">flotte.acme.ci</code> — à ajouter aussi côté Vercel (Settings → Domains).</p>
+        <input value={customDomain} onChange={e => setCustomDomain(e.target.value)}
+          placeholder="(aucun)" className={`${inputCls} font-mono text-xs`} />
+      </div>
+
+      {/* Notes admin */}
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Notes internes (non visibles côté client)</p>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+          placeholder="Spécificités du client, accords commerciaux, dates clés…"
+          className={inputCls} />
+      </div>
+    </div>
+  )
+}
+
+const inputCls = "w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-[#1E2D45] bg-white dark:bg-[#080F1E] focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 outline-none"
+
+function ConfigToggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button type="button" onClick={() => onChange(!value)}
+      className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-lg text-xs font-medium transition ${
+        value ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
+              : "bg-gray-50 dark:bg-[#080F1E] text-gray-400"
+      }`}>
+      <span className="truncate">{label}</span>
+      <span className={`w-7 h-4 rounded-full p-0.5 transition shrink-0 ${value ? "bg-indigo-500" : "bg-gray-300 dark:bg-gray-700"}`}>
+        <span className={`block w-3 h-3 rounded-full bg-white transition transform ${value ? "translate-x-3" : ""}`} />
+      </span>
+    </button>
   )
 }

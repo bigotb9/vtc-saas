@@ -26,5 +26,8 @@ export async function GET(req: NextRequest) {
     module_ai_insights: tenant.module_ai_insights,
     plan:               tenant.plan,
     logo_url:           tenant.logo_url,
+    feature_flags:      tenant.feature_flags || {},
+    config:             tenant.config        || {},
+    // notes : NE PAS exposer (admin only)
   })
 }
