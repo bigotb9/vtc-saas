@@ -45,74 +45,79 @@ export async function GET() {
     // 1. Tous les orders depuis Supabase (colonnes top-level = types garantis)
     const orders = await fetchAllOrders()
 
-    // 2. Profils drivers : Yango API si configuré, sinon fallback sur la base locale
+    // 2. Profils drivers : on remplit TOUJOURS depuis la base locale d'abord
+    // (fallback robuste). Si Yango est configuré ET que l'appel réussit, on
+    // surcharge les profiles avec les données Yango (plus à jour : solde, statut,
+    // photos). Cette stratégie garantit que la page affiche des données même si
+    // Yango est down, mal configuré, ou pas configuré du tout.
+    type Profile = { nom: string; telephone: string; vehicle: string; plaque: string; solde: string; statut: string }
+    const profileMap = new Map<string, Profile>()
+
+    // 2a. Base locale : matche les driver_profile.id seedés au format `driver-${id_chauffeur}`
+    const [{ data: chauffeurs }, { data: affectations }, { data: vehicules }] = await Promise.all([
+      supabase.from("chauffeurs").select("id_chauffeur, nom, numero_wave, actif"),
+      supabase.from("affectation_chauffeurs_vehicules").select("id_chauffeur, id_vehicule, date_fin").is("date_fin", null),
+      supabase.from("vehicules").select("id_vehicule, immatriculation, type_vehicule"),
+    ])
+    type V = { id_vehicule: number; immatriculation: string | null; type_vehicule: string | null }
+    const vehById = new Map<number, V>((vehicules || []).map((v: V) => [v.id_vehicule, v]))
+    const vehByChauffeur = new Map<number, V | undefined>(
+      (affectations || []).map((a: { id_chauffeur: number; id_vehicule: number }) => [a.id_chauffeur, vehById.get(a.id_vehicule)])
+    )
+    for (const ch of (chauffeurs || []) as { id_chauffeur: number; nom: string | null; numero_wave: string | null; actif: boolean }[]) {
+      const v = vehByChauffeur.get(ch.id_chauffeur)
+      profileMap.set(`driver-${ch.id_chauffeur}`, {
+        nom:       ch.nom || "",
+        telephone: ch.numero_wave || "",
+        vehicle:   v?.type_vehicule || "",
+        plaque:    v?.immatriculation || "",
+        solde:     "0",
+        statut:    ch.actif ? "working" : "not_working",
+      })
+    }
+
+    // 2b. Si Yango configuré, on tente de surcharger avec les données live.
+    // En cas d'échec (env partiel, API down, réponse invalide), on conserve
+    // simplement les profiles locaux — la page reste fonctionnelle.
     const driversUrl = process.env.YANGO_DRIVERS_URL
     const driversKey = process.env.YANGO_DRIVERS_API_KEY
     const clid       = process.env.CLID
     const parkId     = process.env.ID_DU_PARTENAIRE
-    const yangoConfigured = !!(driversUrl && driversKey && clid && parkId)
-
-    type Profile = { nom: string; telephone: string; vehicle: string; plaque: string; solde: string; statut: string }
-    const profileMap = new Map<string, Profile>()
-
-    if (yangoConfigured) {
-      const dRes = await fetch(driversUrl!, {
-        method: "POST",
-        headers: {
-          "Content-Type":    "application/json",
-          "X-API-Key":       driversKey!,
-          "X-Client-ID":     clid!,
-          "X-Park-ID":       parkId!,
-          "Accept-Language": "fr",
-        },
-        body: JSON.stringify({
-          query: { park: { id: parkId } },
-          limit: 1000, offset: 0,
-        }),
-      })
-      const dData = await dRes.json()
-      type YangoProfile = {
-        driver_profile?: { id?: string; first_name?: string; last_name?: string; phones?: string[]; work_status?: string }
-        current_status?: { status?: string }
-        car?: { brand?: string; model?: string; number?: string }
-        accounts?: { balance?: string }[]
-      }
-      for (const d of (dData.driver_profiles ?? []) as YangoProfile[]) {
-        const id = d.driver_profile?.id
-        if (!id) continue
-        profileMap.set(id, {
-          nom:       `${d.driver_profile?.first_name || ""} ${d.driver_profile?.last_name || ""}`.trim(),
-          telephone: d.driver_profile?.phones?.[0] || "",
-          vehicle:   d.car ? `${d.car.brand} ${d.car.model}` : "",
-          plaque:    d.car?.number || "",
-          solde:     d.accounts?.[0]?.balance || "0",
-          statut:    d.current_status?.status || "",
+    if (driversUrl && driversKey && clid && parkId) {
+      try {
+        const dRes = await fetch(driversUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type":    "application/json",
+            "X-API-Key":       driversKey,
+            "X-Client-ID":     clid,
+            "X-Park-ID":       parkId,
+            "Accept-Language": "fr",
+          },
+          body: JSON.stringify({ query: { park: { id: parkId } }, limit: 1000, offset: 0 }),
         })
-      }
-    } else {
-      // Fallback démo : on construit le profileMap depuis la base locale.
-      // Le seed produit des `driver_profile.id` au format `driver-${id_chauffeur}` —
-      // on doit utiliser exactement la même clé pour matcher avec les commandes.
-      const [{ data: chauffeurs }, { data: affectations }, { data: vehicules }] = await Promise.all([
-        supabase.from("chauffeurs").select("id_chauffeur, nom, numero_wave, actif"),
-        supabase.from("affectation_chauffeurs_vehicules").select("id_chauffeur, id_vehicule, date_fin").is("date_fin", null),
-        supabase.from("vehicules").select("id_vehicule, immatriculation, type_vehicule"),
-      ])
-      type V = { id_vehicule: number; immatriculation: string | null; type_vehicule: string | null }
-      const vehById = new Map<number, V>((vehicules || []).map((v: V) => [v.id_vehicule, v]))
-      const vehByChauffeur = new Map<number, V | undefined>(
-        (affectations || []).map((a: { id_chauffeur: number; id_vehicule: number }) => [a.id_chauffeur, vehById.get(a.id_vehicule)])
-      )
-      for (const ch of (chauffeurs || []) as { id_chauffeur: number; nom: string | null; numero_wave: string | null; actif: boolean }[]) {
-        const v = vehByChauffeur.get(ch.id_chauffeur)
-        profileMap.set(`driver-${ch.id_chauffeur}`, {
-          nom:       ch.nom || "",
-          telephone: ch.numero_wave || "",
-          vehicle:   v?.type_vehicule || "",
-          plaque:    v?.immatriculation || "",
-          solde:     "0",
-          statut:    ch.actif ? "working" : "not_working",
-        })
+        if (!dRes.ok) throw new Error(`Yango HTTP ${dRes.status}`)
+        const dData = await dRes.json()
+        type YangoProfile = {
+          driver_profile?: { id?: string; first_name?: string; last_name?: string; phones?: string[]; work_status?: string }
+          current_status?: { status?: string }
+          car?: { brand?: string; model?: string; number?: string }
+          accounts?: { balance?: string }[]
+        }
+        for (const d of (dData.driver_profiles ?? []) as YangoProfile[]) {
+          const id = d.driver_profile?.id
+          if (!id) continue
+          profileMap.set(id, {
+            nom:       `${d.driver_profile?.first_name || ""} ${d.driver_profile?.last_name || ""}`.trim(),
+            telephone: d.driver_profile?.phones?.[0] || "",
+            vehicle:   d.car ? `${d.car.brand} ${d.car.model}` : "",
+            plaque:    d.car?.number || "",
+            solde:     d.accounts?.[0]?.balance || "0",
+            statut:    d.current_status?.status || "",
+          })
+        }
+      } catch (e) {
+        console.warn("[driver-stats] Yango fetch failed, using local fallback:", (e as Error).message)
       }
     }
 
