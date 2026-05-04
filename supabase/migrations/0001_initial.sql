@@ -828,11 +828,19 @@ CREATE OR REPLACE VIEW public."vue_dashboard_vehicules" AS
     COALESCE(j.ca_today, 0::numeric) AS ca_aujourdhui,
     COALESCE(m.ca_mois, 0::numeric) AS ca_mensuel,
     COALESCE(c.cout_total, 0::numeric) AS cout_total,
-    COALESCE(m.ca_mois, 0::numeric) - COALESCE(c.cout_total, 0::numeric) AS profit
+    COALESCE(m.ca_mois, 0::numeric) - COALESCE(cm.cout_mois, 0::numeric) AS profit,
+    COALESCE(cm.cout_mois, 0::numeric) AS cout_mensuel
    FROM vehicules v
      LEFT JOIN vue_ca_vehicule_aujourdhui j ON v.id_vehicule = j.id_vehicule
-     LEFT JOIN vue_ca_vehicule_mois m ON v.id_vehicule = m.id_vehicule AND m.mois = date_trunc('month'::text, CURRENT_DATE::timestamp with time zone)
-     LEFT JOIN cout_reel_vehicule c ON v.id_vehicule = c.id_vehicule;
+     LEFT JOIN vue_ca_vehicule_mois m ON v.id_vehicule = m.id_vehicule
+                                      AND m.mois = date_trunc('month'::text, CURRENT_DATE::timestamp with time zone)
+     LEFT JOIN cout_reel_vehicule c ON v.id_vehicule = c.id_vehicule
+     LEFT JOIN (
+        SELECT id_vehicule, SUM(montant) AS cout_mois
+        FROM depenses_vehicules
+        WHERE date_trunc('month'::text, date_depense::timestamp with time zone) = date_trunc('month'::text, CURRENT_DATE::timestamp with time zone)
+        GROUP BY id_vehicule
+     ) cm ON v.id_vehicule = cm.id_vehicule;
 
 -- ────────── Triggers ──────────
 

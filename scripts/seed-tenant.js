@@ -523,7 +523,7 @@ async function main() {
     for (const cat of expenseCats) {
       const n = rnd(cat.countRange[0], cat.countRange[1])
       for (let i = 0; i < n; i++) {
-        const d = addDays(baseDate, rnd(5, 180))
+        const d = addDays(baseDate, rnd(5, 184))
         depenses.push({
           id_depense: crypto.randomUUID(),
           date_depense: fmtDate(d),
