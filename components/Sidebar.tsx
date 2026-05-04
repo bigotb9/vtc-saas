@@ -16,6 +16,10 @@ import { useTenant } from "@/components/TenantProvider"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSidebar } from "@/lib/SidebarContext"
 
+// Internal tenant mapping: the sidebar affiche "Partenariat Yango" mais utilise toujours
+// les routes internes /boyah-transport pour préserver la correspondance avec Boyah Group.
+const BOYAH_SERVICE_LABEL = "Partenariat Yango"
+
 // ── Section label ─────────────────────────────────────────────────────────────
 function SectionLabel({ label, collapsed }: { label: string; collapsed: boolean }) {
   if (collapsed) return <div className="my-2 h-px bg-gray-100 dark:bg-[#1A2235] mx-2" />
@@ -242,7 +246,7 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
         <SectionLabel label="Services" collapsed={collapsed} />
         <div className="space-y-0.5">
           {collapsed ? (
-            <NavLink href="/boyah-transport/dashboard" label="Boyah Transport" icon={Truck} collapsed={collapsed} />
+            <NavLink href="/boyah-transport/dashboard" label={BOYAH_SERVICE_LABEL} icon={Truck} collapsed={collapsed} />
           ) : (
             <>
               <button onClick={() => setOpenBoyah(p => !p)}
@@ -255,7 +259,7 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
                 <motion.div whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} transition={{ type: "spring", stiffness: 400, damping: 15 }}>
                   <Truck size={17} className={isBoyahActive ? "text-indigo-500 dark:text-indigo-400" : "opacity-70"} />
                 </motion.div>
-                <span className="flex-1 text-left">Boyah Transport</span>
+                <span className="flex-1 text-left">{BOYAH_SERVICE_LABEL}</span>
                 <motion.span animate={{ rotate: openBoyah ? 90 : 0 }} transition={{ duration: 0.2 }}>
                   <ChevronRight size={13} className="opacity-40" />
                 </motion.span>
