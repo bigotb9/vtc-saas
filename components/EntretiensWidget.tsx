@@ -58,7 +58,8 @@ function defaultInspection(): Inspection {
   }
 }
 
-function detectAlertes(ins: Inspection): string[] {
+function detectAlertes(ins: Inspection | null | undefined): string[] {
+  if (!ins) return []
   const a: string[] = []
   const ECL_FR: Record<string, string> = {
     phares_croisement: "Phares croisement", phares_route: "Phares route",
@@ -68,25 +69,25 @@ function detectAlertes(ins: Inspection): string[] {
     feux_recul: "Feux recul", feux_plaque: "Feux plaque",
     feux_detresse: "Feux détresse", feux_brouillard: "Brouillard",
   }
-  Object.entries(ins.eclairage).forEach(([k, v]) => { if (!v) a.push(`🔦 ${ECL_FR[k] || k} en panne`) })
-  Object.entries(ins.carrosserie).forEach(([k, v]) => { if (v === "tres_mauvais") a.push(`🚗 Carrosserie ${k.replace(/_/g, " ")} — très mauvais`) })
-  Object.entries(ins.interieur).forEach(([k, v]) => {
+  Object.entries(ins.eclairage ?? {}).forEach(([k, v]) => { if (!v) a.push(`🔦 ${ECL_FR[k] || k} en panne`) })
+  Object.entries(ins.carrosserie ?? {}).forEach(([k, v]) => { if (v === "tres_mauvais") a.push(`🚗 Carrosserie ${k.replace(/_/g, " ")} — très mauvais`) })
+  Object.entries(ins.interieur ?? {}).forEach(([k, v]) => {
     if (v === "tres_mauvais" || v === "panne") a.push(`🪑 Intérieur: ${k.replace(/_/g, " ")} — ${v === "panne" ? "en panne" : "très mauvais"}`)
   })
-  Object.entries(ins.mecanique).forEach(([k, v]) => { if (v === "critique") a.push(`🔧 Mécanique: ${k.replace(/_/g, " ")} critique`) })
-  Object.entries(ins.pneus).forEach(([k, v]) => {
+  Object.entries(ins.mecanique ?? {}).forEach(([k, v]) => { if (v === "critique") a.push(`🔧 Mécanique: ${k.replace(/_/g, " ")} critique`) })
+  Object.entries(ins.pneus ?? {}).forEach(([k, v]) => {
     if (v === "a_changer") a.push(`🛞 Pneu ${k.replace(/_/g, " ")} à changer`)
     if (k === "secours" && v === "absent") a.push("🛞 Pneu de secours absent")
   })
-  Object.entries(ins.freinage).forEach(([k, v]) => {
+  Object.entries(ins.freinage ?? {}).forEach(([k, v]) => {
     if (v === "critique" || v === "panne") a.push(`🛑 Freinage ${k.replace(/_/g, " ")} — ${v}`)
   })
-  Object.entries(ins.documents).forEach(([k, v]) => {
+  Object.entries(ins.documents ?? {}).forEach(([k, v]) => {
     if (v === "expire") a.push(`📄 ${k.replace(/_/g, " ")} expiré`)
     if (v === "absent") a.push(`📄 ${k.replace(/_/g, " ")} absent`)
   })
-  if (!ins.equipements.extincteur) a.push("🧯 Extincteur absent")
-  if (!ins.equipements.triangle)   a.push("⚠️ Triangle absent")
+  if (ins.equipements && ins.equipements.extincteur === false) a.push("🧯 Extincteur absent")
+  if (ins.equipements && ins.equipements.triangle === false)   a.push("⚠️ Triangle absent")
   return a
 }
 
