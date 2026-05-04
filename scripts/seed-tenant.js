@@ -135,7 +135,8 @@ function genVehicules(clients, baseDate) {
     const plate = `CI-${rnd(1000, 9999)}${String.fromCharCode(65 + (i % 6))}${String.fromCharCode(65 + ((i + 3) % 6))}`
     const statut = i < 17 ? "ACTIF" : pick(["EN MAINTENANCE", "GARAGE", "RESERVE"])
     const startKm = rnd(82000, 185000)
-    const recetteJour = rnd(80000, 130000)
+    // Recette journalière cible par véhicule : 20 000 FCFA (avec petite variation pour le réalisme)
+    const recetteJour = rnd(18000, 22000)
     const assuranceDate = addDays(baseDate, rnd(20, 100))
     const visiteDate = addMonths(assuranceDate, 6)
     const patenteDate = addMonths(baseDate, rnd(1, 4))
@@ -159,7 +160,7 @@ function genVehicules(clients, baseDate) {
       carte_grise_recto: null,
       carte_grise_verso: null,
       sous_gestion: rnd(0, 1) === 1,
-      montant_mensuel_client: rnd(220000, 420000),
+      montant_mensuel_client: rnd(120000, 220000),
       id_client: pick(clients).id,
       date_carte_stationnement: fmtDate(parkingDate),
       date_expiration_carte_stationnement: fmtDate(addMonths(parkingDate, 12)),
@@ -417,6 +418,7 @@ async function main() {
   const paymentMethods = ["cash", "card", "mobile_money"]
   const categories = ["Transport", "Delivery", "Business", "Personal"]
   const clientsList = clients
+  const chauffeursById = new Map(chauffeurs.map((c) => [c.id_chauffeur, c]))
 
   for (let day = 0; day < 184; day++) {
     const date = addDays(baseDate, day)
@@ -450,19 +452,24 @@ async function main() {
 
     if (!workday) continue
 
-    // Recette journalière : ~1 versement par chauffeur actif (avec ~20% de chauffeurs qui sautent une journée)
-    for (const ch of activeChauffeurs) {
-      if (rnd(1, 100) <= 20) continue
-      const vId = findVehiculeForChauffeur(ch.id_chauffeur, dayIso)
-      if (!vId) continue
-      const veh = vehicules.find((v) => v.id_vehicule === vId)
-      const expected = Number(veh.montant_recette_jour || 90000)
-      // 70% pile à montant attendu, 20% en plus, 10% en moins (= retard)
+    // Recette journalière : 1 versement par VÉHICULE actif et par jour ouvré (~20k FCFA cible).
+    // Si 2 chauffeurs sont affectés au même véhicule ce jour-là, on en choisit un seul.
+    // ~12% des jours, le véhicule ne roule pas (panne, pause, etc.)
+    for (const v of activeVehicules) {
+      if (rnd(1, 100) <= 12) continue
+      const drivers = assignments
+        .filter((a) => a.id_vehicule === v.id_vehicule && dayIso >= a.date_debut && (!a.date_fin || dayIso <= a.date_fin))
+        .map((a) => chauffeursById.get(a.id_chauffeur))
+        .filter(Boolean)
+      if (drivers.length === 0) continue
+      const ch = pick(drivers)
+      const expected = Number(v.montant_recette_jour || 20000)
+      // 72% au montant attendu (±10%), 18% un peu plus (bonne journée), 10% en dessous (jour mou / retard)
       const r = rnd(1, 100)
       let amount
-      if (r <= 70) amount = expected + rnd(-2000, 3000)
-      else if (r <= 90) amount = expected + rnd(5000, 25000)
-      else amount = Math.round(expected * (rnd(60, 92) / 100))
+      if (r <= 72) amount = Math.round(expected * (rnd(95, 110) / 100))
+      else if (r <= 90) amount = Math.round(expected * (rnd(115, 135) / 100))
+      else amount = Math.round(expected * (rnd(55, 88) / 100))
       const heure = rnd(17, 22)
       const t = new Date(date)
       t.setUTCHours(heure, rnd(0, 59), rnd(0, 59), 0)
@@ -471,7 +478,7 @@ async function main() {
         _localId: localId,
         id_recette: 200000 + localId,
         Horodatage: fmtDT(t),
-        "Identifiant de transaction": `WAVE-${dayIso}-${ch.id_chauffeur}-${rnd(10000, 99999)}`,
+        "Identifiant de transaction": `WAVE-${dayIso}-V${v.id_vehicule}-${rnd(10000, 99999)}`,
         "Type de transaction": "Versement chauffeur",
         "Montant net": amount,
         "Montant brut": amount + rnd(200, 1200),
@@ -485,7 +492,7 @@ async function main() {
         date_paiement: dayIso,
         date_travail: dayIso,
         telephone_chauffeur: ch.numero_wave,
-        id_vehicule: vId,
+        id_vehicule: v.id_vehicule,
       })
     }
   }
@@ -500,29 +507,51 @@ async function main() {
   await insertChunks(supa, "recettes_wave", recettesPayload)
   console.log(`   ✓ ${recettes.length} recettes Wave`)
 
-  // 9) dépenses
+  // 9) dépenses — par catégorie réaliste, puis scalées pour atteindre 35% du CA total
   console.log("💰 Dépenses véhicules…")
-  const reasons = ["Vidange périodique", "Révision moteur", "Changement pneus", "Carburant premium", "Assurance trimestrielle", "Contrôle technique", "Réparation freinage", "Réparation embrayage", "Lavage complet"]
-  const types = ["Carburant", "Réparation", "Pneus", "Assurance", "Entretien", "Pièces détachées", "Lavage"]
+  const expenseCats = [
+    { type: "Carburant",        countRange: [10, 18], amountRange: [6000, 18000],   desc: ["Plein carburant", "Recharge essence", "Carburant station"] },
+    { type: "Réparation",       countRange: [2, 4],   amountRange: [55000, 220000], desc: ["Réparation moteur", "Réparation embrayage", "Réparation freinage", "Réparation suspension"] },
+    { type: "Pneus",            countRange: [1, 2],   amountRange: [100000, 180000],desc: ["Changement pneus avant", "Jeu de pneus complet", "Remplacement pneu"] },
+    { type: "Assurance",        countRange: [1, 1],   amountRange: [100000, 150000],desc: ["Renouvellement assurance", "Assurance trimestrielle"] },
+    { type: "Entretien",        countRange: [4, 6],   amountRange: [22000, 65000],  desc: ["Vidange périodique", "Révision moteur", "Filtres remplacés", "Contrôle technique"] },
+    { type: "Pièces détachées", countRange: [1, 3],   amountRange: [25000, 140000], desc: ["Pièces détachées", "Remplacement pièce", "Plaquettes de frein"] },
+    { type: "Lavage",           countRange: [8, 14],  amountRange: [3500, 12000],   desc: ["Lavage complet", "Nettoyage intérieur", "Polish carrosserie"] },
+  ]
   const depenses = []
   for (const v of vehicules) {
-    const n = rnd(3, 6)
-    for (let i = 0; i < n; i++) {
-      const d = addDays(baseDate, rnd(5, 180))
-      depenses.push({
-        id_depense: crypto.randomUUID(),
-        date_depense: fmtDate(d),
-        montant: rnd(8000, 130000),
-        type_depense: pick(types),
-        description: pick(reasons),
-        id_vehicule: v.id_vehicule,
-        immobilisation: false,
-        date_debut_immobilisation: null,
-        date_fin_immobilisation: null,
-        created_at: fmtDT(addDays(d, rnd(0, 3))),
-      })
+    for (const cat of expenseCats) {
+      const n = rnd(cat.countRange[0], cat.countRange[1])
+      for (let i = 0; i < n; i++) {
+        const d = addDays(baseDate, rnd(5, 180))
+        depenses.push({
+          id_depense: crypto.randomUUID(),
+          date_depense: fmtDate(d),
+          montant: rnd(cat.amountRange[0], cat.amountRange[1]),
+          type_depense: cat.type,
+          description: pick(cat.desc),
+          id_vehicule: v.id_vehicule,
+          immobilisation: false,
+          date_debut_immobilisation: null,
+          date_fin_immobilisation: null,
+          created_at: fmtDT(addDays(d, rnd(0, 3))),
+        })
+      }
     }
   }
+  // Scale uniforme pour atteindre 35% du CA total
+  const totalCA = recettes.reduce((s, r) => s + Number(r["Montant net"] || 0), 0)
+  const targetDepenses = totalCA * 0.35
+  const rawDepensesSum = depenses.reduce((s, d) => s + d.montant, 0)
+  const scaleFactor = targetDepenses / rawDepensesSum
+  for (const d of depenses) {
+    d.montant = Math.max(500, Math.round((d.montant * scaleFactor) / 100) * 100)
+  }
+  const finalDepensesSum = depenses.reduce((s, d) => s + d.montant, 0)
+  console.log(`   CA total      : ${Math.round(totalCA).toLocaleString("fr-FR")} FCFA`)
+  console.log(`   Cible 35%     : ${Math.round(targetDepenses).toLocaleString("fr-FR")} FCFA`)
+  console.log(`   Brut généré   : ${Math.round(rawDepensesSum).toLocaleString("fr-FR")} FCFA (× ${scaleFactor.toFixed(3)})`)
+  console.log(`   Total final   : ${finalDepensesSum.toLocaleString("fr-FR")} FCFA (${(finalDepensesSum / totalCA * 100).toFixed(1)}% du CA)`)
   await insertChunks(supa, "depenses_vehicules", depenses)
   console.log(`   ✓ ${depenses.length} dépenses`)
 
@@ -587,7 +616,7 @@ async function main() {
       versementsClients.push({
         id_client: c.id,
         mois: `${month.getUTCFullYear()}-${pad(month.getUTCMonth() + 1)}`,
-        montant: rnd(180000, 420000),
+        montant: rnd(120000, 220000),
         date_versement: fmtDate(addDays(month, rnd(20, 28))),
         notes: "Versement mensuel client.",
         created_at: fmtDT(addDays(month, rnd(20, 28))),
@@ -610,7 +639,8 @@ async function main() {
         date_versement: fmtDate(payDate),
         id_chauffeur: ch.id_chauffeur,
         id_vehicule: vId,
-        montant: rnd(55000, 220000),
+        // ~6 jours × 20k = 120k/sem (avec variation)
+        montant: rnd(85000, 150000),
         created_at: fmtDT(addDays(payDate, 1)),
       })
     }
