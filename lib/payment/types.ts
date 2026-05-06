@@ -34,8 +34,19 @@ export type CheckoutSessionRequest = {
 
 export type CheckoutSession = {
   provider:     PaymentProvider
-  sessionId:    string         // ID externe (chez Wave/Stripe)
+  sessionId:    string         // ID externe (chez Wave/Stripe) — ou interne si lien marchand
   checkoutUrl:  string         // URL où rediriger l'utilisateur
+
+  /**
+   * Si true, on n'a pas de webhook automatique — le client paie sur la
+   * plateforme externe (Wave merchant link), revient sur notre app et
+   * doit déclarer manuellement le paiement avec son n° de transaction.
+   * L'admin SaaS valide ensuite côté backoffice.
+   *
+   * Si false (Stripe checkout, Wave Business avec webhook) : le webhook
+   * confirmera automatiquement.
+   */
+  manualClaim?: boolean
   expiresAt:    string         // ISO
 }
 

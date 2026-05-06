@@ -1,8 +1,8 @@
 import "server-only"
 import { supabaseMaster } from "@/lib/supabaseMaster"
 import {
-  expirationReminderTemplate, invoicePaidTemplate, suspensionTemplate, welcomeTemplate,
-  type ExpirationReminderData, type InvoicePaidData, type SuspensionData, type WelcomeData,
+  expirationReminderTemplate, invoicePaidTemplate, suspensionTemplate, wavePendingTemplate, welcomeTemplate,
+  type ExpirationReminderData, type InvoicePaidData, type SuspensionData, type WavePendingData, type WelcomeData,
 } from "./templates"
 
 /**
@@ -163,6 +163,20 @@ export async function sendExpirationReminderEmail(opts: { tenantId: string; toEm
     template: "expiration_reminder",
     tenantId: opts.tenantId,
     dedupKey: `expiration-${opts.subscriptionId}-${opts.daysLeft}`,
+  })
+}
+
+export async function sendWavePendingEmail(opts: { toEmail: string; toName?: string } & WavePendingData) {
+  const { subject, html, text } = wavePendingTemplate(opts)
+  return sendEmail({
+    to:       opts.toEmail,
+    toName:   opts.toName,
+    subject, html, text,
+    template: "wave_pending",
+    tenantId: opts.tenantId,
+    // dedup_key permet de re-notifier si le client soumet une nouvelle ref :
+    // on inclut transactionRef pour distinguer.
+    dedupKey: `wave-pending-${opts.tenantId}-${opts.transactionRef}`,
   })
 }
 

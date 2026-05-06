@@ -86,6 +86,21 @@ function TenantShell({ children }: { children: React.ReactNode }) {
   )
 }
 
+/**
+ * Shell ultra-léger pour la page de login tenant ("/").
+ * Pas de Sidebar, pas de AuthGuard, pas de AppShell — juste TenantProvider
+ * pour que useTenant() renvoie le brand. La page de login (app/page.tsx)
+ * a son propre fond plein écran (#060B14), donc pas de flash gris.
+ */
+function LoginShell({ children }: { children: React.ReactNode }) {
+  return (
+    <TenantProvider>
+      <Toaster />
+      {children}
+    </TenantProvider>
+  )
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || ""
   const isSaasRoute = pathname.startsWith("/saas")
@@ -102,13 +117,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const isDevRoute = pathname.startsWith("/dev/")
   // Routes /pay/* (paiement public d'une facture renewal via lien email).
   const isPayRoute = pathname.startsWith("/pay/")
-  const skipTenantShell = isSaasRoute || isMarketingRoute || isDevRoute || isPayRoute
+  // La page de login tenant ("/") doit être plein écran, sans Sidebar ni
+  // AppShell — sinon flash gris au chargement (cf. capture du 2026-05-06).
+  const isLoginRoute = pathname === "/"
+  const skipShells = isSaasRoute || isMarketingRoute || isDevRoute || isPayRoute
+
+  let content: React.ReactNode
+  if (skipShells)              content = children
+  else if (isLoginRoute)       content = <LoginShell>{children}</LoginShell>
+  else                         content = <TenantShell>{children}</TenantShell>
 
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={`${geist.variable} ${geistMono.variable} font-sans bg-gray-50 dark:bg-[#080C14] text-gray-900 dark:text-white`}>
         <ThemeProvider attribute="class" defaultTheme="dark">
-          {skipTenantShell ? children : <TenantShell>{children}</TenantShell>}
+          {content}
         </ThemeProvider>
       </body>
     </html>

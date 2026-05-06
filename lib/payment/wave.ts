@@ -10,24 +10,30 @@ import type {
 /**
  * Provider Wave CI.
  *
- * Mode 'stub' : renvoie une URL de simulation /dev/wave-checkout. Le payload
- * webhook est accepté tel quel sans signature (utile pour les tests locaux).
+ * Deux modes de production possibles selon WAVE_MODE :
  *
- * Mode 'production' :
- *   - createCheckoutSession appelle POST https://api.wave.com/v1/checkout/sessions
- *     avec WAVE_API_KEY (Bearer token) — renvoie wave_launch_url + session id
- *   - verifyAndParseWebhook vérifie la signature HMAC SHA256 du rawBody avec
- *     WAVE_WEBHOOK_SECRET. Wave envoie le header X-Wave-Signature.
+ * 1. 'merchant' (par défaut) — pour Wave Business sans API/webhook
+ *    Le marchand a juste un lien de paiement statique
+ *    (ex: https://pay.wave.com/m/<merchant_id>/c/ci/). On y appose le
+ *    montant en query string. Le client paie, revient sur notre app et
+ *    déclare son paiement via l'UI "J'ai payé" en saisissant son n°
+ *    de transaction. L'admin SaaS valide depuis le backoffice.
  *
- * Variables env requises en prod :
- *   - WAVE_API_KEY          (clé secrète Wave Business)
- *   - WAVE_WEBHOOK_SECRET   (secret de signature des webhooks)
+ * 2. 'api' — pour Wave Business avec accès API/webhook complet
+ *    createCheckoutSession appelle POST checkout/sessions, webhook signé
+ *    automatique. (Code conservé pour le jour où Wave activera l'API.)
  *
- * Doc : https://docs.wave.com/business — confirmer le format de signature
- * exact avec le compte Business (peut être `v1=<hex>` ou hex pur).
+ * Variables env :
+ *   - WAVE_MODE             : 'merchant' ou 'api' (défaut 'merchant')
+ *   - WAVE_MERCHANT_LINK    : URL du lien marchand (mode merchant)
+ *   - WAVE_API_KEY          : clé Bearer (mode api)
+ *   - WAVE_WEBHOOK_SECRET   : secret signature webhook (mode api)
+ *
+ * Mode 'stub' : renvoie une URL de simulation /dev/wave-checkout (tests).
  */
 
-const PAYMENT_MODE = process.env.PAYMENT_MODE || "stub"
+const PAYMENT_MODE  = process.env.PAYMENT_MODE || "stub"
+const WAVE_MODE     = process.env.WAVE_MODE     || "merchant"
 const WAVE_API_BASE = process.env.WAVE_API_BASE || "https://api.wave.com/v1"
 
 
@@ -67,12 +73,32 @@ export const waveProvider: PaymentProviderImpl = {
       }
     }
 
-    // PRODUCTION
-    const apiKey = process.env.WAVE_API_KEY
-    if (!apiKey) throw new Error("WAVE_API_KEY manquant")
+    // ─── PRODUCTION mode 'merchant' (lien Wave statique avec ?amount=) ───
+    if (WAVE_MODE === "merchant") {
+      const merchantLink = process.env.WAVE_MERCHANT_LINK
+      if (!merchantLink) throw new Error("WAVE_MERCHANT_LINK manquant")
 
-    // client_reference : utilisé pour retrouver tenant/invoice côté webhook.
-    // On encode purpose:tenant_id:invoice_id pour le déduire à la volée.
+      // sessionId interne — Wave n'en attribue pas en mode lien statique.
+      const sessionId = `wave_merchant_${crypto.randomUUID()}`
+
+      // Lien Wave + ?amount=. La devise est XOF (FCFA), pas besoin de
+      // currency en query — Wave la déduit du compte marchand.
+      const sep = merchantLink.includes("?") ? "&" : "?"
+      const checkoutUrl = `${merchantLink}${sep}amount=${req.amountFcfa}`
+
+      return {
+        provider:    "wave",
+        sessionId,
+        checkoutUrl,
+        manualClaim: true,    // pas de webhook → le client doit déclarer
+        expiresAt:   new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      }
+    }
+
+    // ─── PRODUCTION mode 'api' (Wave Business avec API/webhook) ───
+    const apiKey = process.env.WAVE_API_KEY
+    if (!apiKey) throw new Error("WAVE_API_KEY manquant (mode 'api')")
+
     const ref = `${req.metadata.purpose}:${req.metadata.tenant_id}:${req.metadata.invoice_id ?? ""}`
 
     const res = await fetch(`${WAVE_API_BASE}/checkout/sessions`, {

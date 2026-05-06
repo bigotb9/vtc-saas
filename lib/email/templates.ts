@@ -34,6 +34,19 @@ export type SuspensionData = {
   reactivateUrl: string         // URL pour payer la facture en retard
 }
 
+export type WavePendingData = {
+  tenantId:        string
+  tenantName:      string
+  tenantSlug:      string
+  clientEmail:     string
+  planName:        string
+  cycle:           "monthly" | "yearly"
+  expectedAmount:  number       // FCFA
+  transactionRef:  string
+  payerPhone:      string | null
+  reviewUrl:       string       // /saas/tenants/<id>
+}
+
 
 // ────────── Layout HTML commun ──────────
 
@@ -156,6 +169,44 @@ ${data.renewUrl}
 
 
 // ────────── suspension ──────────
+
+// ────────── wave_pending (admin notif) ──────────
+
+export function wavePendingTemplate(data: WavePendingData) {
+  const subject = `🔔 Paiement Wave à vérifier — ${data.tenantName}`
+  const text = `Un nouveau client vient de déclarer un paiement Wave.
+
+Client       : ${data.tenantName} (slug: ${data.tenantSlug})
+Email        : ${data.clientEmail}
+Plan         : ${data.planName} (${data.cycle === "yearly" ? "annuel" : "mensuel"})
+Montant attendu : ${formatFcfa(data.expectedAmount)}
+N° transaction Wave : ${data.transactionRef}
+${data.payerPhone ? `Téléphone payeur : ${data.payerPhone}\n` : ""}
+Vérifiez la transaction sur Wave Business, puis activez le compte ici :
+${data.reviewUrl}
+`
+  const html = htmlLayout(`
+    <h2 style="margin:0 0 8px 0;font-size:22px;color:#111827;">Paiement Wave à vérifier</h2>
+    <p style="margin:0 0 16px 0;font-size:14px;line-height:1.5;color:#4b5563;">
+      Un nouveau client vient de déclarer un paiement Wave. Vérifiez la transaction côté
+      Wave Business, puis activez le compte depuis le tour de contrôle.
+    </p>
+    <table cellpadding="10" cellspacing="0" border="0" style="width:100%;background:#f9fafb;border-radius:8px;font-size:13px;color:#374151;margin:12px 0;">
+      <tr><td style="width:140px;color:#6b7280;">Client</td><td><strong>${data.tenantName}</strong> (${data.tenantSlug})</td></tr>
+      <tr><td style="color:#6b7280;">Email</td><td>${data.clientEmail}</td></tr>
+      <tr><td style="color:#6b7280;">Plan</td><td>${data.planName} ${data.cycle === "yearly" ? "(annuel)" : "(mensuel)"}</td></tr>
+      <tr><td style="color:#6b7280;">Montant attendu</td><td style="color:#059669;font-weight:600;">${formatFcfa(data.expectedAmount)}</td></tr>
+      <tr><td style="color:#6b7280;">N° transaction Wave</td><td><code style="background:#fff;padding:2px 6px;border-radius:4px;border:1px solid #e5e7eb;">${data.transactionRef}</code></td></tr>
+      ${data.payerPhone ? `<tr><td style="color:#6b7280;">Tél. payeur</td><td>${data.payerPhone}</td></tr>` : ""}
+    </table>
+    ${ctaButton(data.reviewUrl, "Vérifier et activer →")}
+    <p style="margin:16px 0 0 0;font-size:12px;color:#9ca3af;">
+      Le compte client sera créé automatiquement après votre confirmation.
+    </p>
+  `)
+  return { subject, html, text }
+}
+
 
 export function suspensionTemplate(data: SuspensionData) {
   const subject = `Votre abonnement VTC Dashboard est suspendu`

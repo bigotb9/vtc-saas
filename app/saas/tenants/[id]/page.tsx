@@ -7,8 +7,9 @@ import { supabaseMasterClient as sb } from "@/lib/supabaseMasterClient"
 import {
   ArrowLeft, ExternalLink, Loader2, CheckCircle2, AlertCircle, Clock,
   RefreshCw, Trash2, Mail, Globe, Hash, Calendar, Package, Boxes,
-  Settings, Save, Plus, X as XIcon, Code,
+  Settings, Save, Plus, X as XIcon, Code, Smartphone, CircleDollarSign,
 } from "lucide-react"
+import { ADDONS, PLANS, formatFcfa, getSignupTotalFcfa, type AddonId, type BillingCycle, type PlanId } from "@/lib/plans"
 
 type Tenant = {
   id:                   string
@@ -31,6 +32,22 @@ type Tenant = {
   notes:                string | null
   created_at:           string
   updated_at:           string
+
+  // Champs signup (cf. migration 0004)
+  signup_plan_id:       string | null
+  signup_billing_cycle: "monthly" | "yearly" | null
+  signup_data:          {
+    phone?:           string
+    country?:         string
+    expected_vehicles?: number | null
+    addons?:          string[]
+    wave_claim?: {
+      transaction_ref: string
+      payer_phone:     string | null
+      session_id:      string | null
+      claimed_at:      string
+    }
+  } | null
 }
 
 type ProvisioningLog = {
@@ -62,7 +79,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
   const [tenant, setTenant]     = useState<Tenant | null>(null)
   const [logs, setLogs]         = useState<ProvisioningLog[]>([])
   const [loading, setLoading]   = useState(true)
-  const [acting, setActing]     = useState<"retry" | "delete" | null>(null)
+  const [acting, setActing]     = useState<"retry" | "delete" | "confirm-payment" | null>(null)
 
   const load = async () => {
     const { data: sess } = await sb.auth.getSession()
@@ -98,6 +115,26 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
     const j = await res.json()
     if (!res.ok) alert(j.error || "Erreur")
     setActing(null)
+    load()
+  }
+
+  const onConfirmPayment = async () => {
+    if (!tenant) return
+    if (!confirm(
+      `Confirmer le paiement Wave et activer le compte de "${tenant.nom}" ?\n\n` +
+      `Cela va créer la subscription, activer les addons cochés, créer le projet Supabase et envoyer l'email de bienvenue.`
+    )) return
+    setActing("confirm-payment")
+    const { data: sess } = await sb.auth.getSession()
+    if (!sess.session) { setActing(null); return }
+    const res = await fetch(`/api/signup/${id}/confirm-payment`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${sess.session.access_token}` },
+    })
+    const j = await res.json()
+    setActing(null)
+    if (!res.ok) { alert(j.error || "Erreur"); return }
+    alert("✓ Paiement confirmé. Provisioning lancé — la page va se rafraîchir.")
     load()
   }
 
@@ -201,6 +238,11 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
           </button>
         </div>
       </div>
+
+      {/* Paiement Wave en attente de validation */}
+      {tenant.provisioning_status === "awaiting_payment" && (
+        <WavePendingCard tenant={tenant} acting={acting} onConfirm={onConfirmPayment} />
+      )}
 
       {/* Infos */}
       <div className="grid md:grid-cols-2 gap-4">
@@ -453,6 +495,107 @@ function ConfigEditor({ tenant, onSaved }: { tenant: Tenant; onSaved: () => void
 }
 
 const inputCls = "w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-[#1E2D45] bg-white dark:bg-[#080F1E] focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 outline-none"
+
+function WavePendingCard({ tenant, acting, onConfirm }: {
+  tenant:    Tenant
+  acting:    "retry" | "delete" | "confirm-payment" | null
+  onConfirm: () => void
+}) {
+  const claim = tenant.signup_data?.wave_claim
+  const planId = tenant.signup_plan_id as PlanId | null
+  const cycle  = (tenant.signup_billing_cycle || "monthly") as BillingCycle
+  const addons = (tenant.signup_data?.addons || [])
+    .filter((id): id is AddonId => !!ADDONS[id as AddonId])
+
+  const expectedAmount = planId
+    ? getSignupTotalFcfa(planId, cycle, addons).cycleTotal
+    : 0
+  const planName = planId ? PLANS[planId]?.name ?? planId : "—"
+
+  return (
+    <div className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-500/10 dark:to-transparent border border-amber-300 dark:border-amber-500/30 rounded-2xl p-5">
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-300">
+            <CircleDollarSign size={20} />
+          </div>
+          <div>
+            <h2 className="font-bold text-gray-900 dark:text-white">
+              {claim ? "Paiement Wave déclaré — à vérifier" : "En attente de paiement"}
+            </h2>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              {claim
+                ? "Le client a déclaré son paiement. Vérifiez sur Wave Business avant d'activer."
+                : "Le client n'a pas encore payé. Le compte sera activé après confirmation du paiement."}
+            </p>
+          </div>
+        </div>
+
+        {claim && (
+          <button
+            onClick={onConfirm}
+            disabled={!!acting}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold disabled:opacity-50 shrink-0"
+          >
+            {acting === "confirm-payment" ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+            Confirmer & activer
+          </button>
+        )}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-3 text-sm">
+        <div className="bg-white dark:bg-white/[0.02] rounded-xl border border-amber-200/50 dark:border-amber-500/20 p-3">
+          <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-2">Récap commande</p>
+          <dl className="space-y-1.5 text-xs">
+            <div className="flex justify-between">
+              <dt className="text-gray-500">Plan</dt>
+              <dd className="font-medium">{planName} ({cycle === "yearly" ? "annuel" : "mensuel"})</dd>
+            </div>
+            {addons.map(id => (
+              <div key={id} className="flex justify-between">
+                <dt className="text-gray-500">+ {ADDONS[id].name}</dt>
+                <dd>+{formatFcfa(ADDONS[id].priceMonthlyFcfa ?? 0)} / mois</dd>
+              </div>
+            ))}
+            <div className="flex justify-between border-t border-amber-200/50 dark:border-amber-500/20 pt-1.5 mt-1.5 font-bold">
+              <dt>Montant attendu</dt>
+              <dd className="text-emerald-700 dark:text-emerald-400">{formatFcfa(expectedAmount)}</dd>
+            </div>
+          </dl>
+        </div>
+
+        {claim ? (
+          <div className="bg-white dark:bg-white/[0.02] rounded-xl border border-amber-200/50 dark:border-amber-500/20 p-3">
+            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-2">Déclaration client</p>
+            <dl className="space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <dt className="text-gray-500 inline-flex items-center gap-1"><Smartphone size={11} /> N° transaction</dt>
+                <dd className="font-mono font-medium">{claim.transaction_ref}</dd>
+              </div>
+              {claim.payer_phone && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">Tél. payeur</dt>
+                  <dd>{claim.payer_phone}</dd>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <dt className="text-gray-500">Déclaré le</dt>
+                <dd>{new Date(claim.claimed_at).toLocaleString("fr-FR")}</dd>
+              </div>
+            </dl>
+            <p className="text-[10px] text-amber-700 dark:text-amber-400 mt-2 leading-snug">
+              ℹ️ Vérifie la transaction <strong>{claim.transaction_ref}</strong> dans Wave Business avant de confirmer. Le compte sera créé automatiquement.
+            </p>
+          </div>
+        ) : (
+          <div className="bg-white dark:bg-white/[0.02] rounded-xl border border-amber-200/50 dark:border-amber-500/20 p-3 flex items-center justify-center text-xs text-gray-400">
+            Aucune déclaration de paiement reçue à ce jour.
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 function ConfigToggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
   return (

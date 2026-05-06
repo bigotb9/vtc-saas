@@ -127,9 +127,11 @@ export async function POST(req: NextRequest) {
   })
 
   return NextResponse.json({
-    checkout_url: session.checkoutUrl,
-    session_id:   session.sessionId,
-    provider:     session.provider,
-    expires_at:   session.expiresAt,
+    checkout_url:  session.checkoutUrl,
+    session_id:    session.sessionId,
+    provider:      session.provider,
+    expires_at:    session.expiresAt,
+    manual_claim:  session.manualClaim ?? false,
+    amount_fcfa:   amountFcfa,
   })
 }
