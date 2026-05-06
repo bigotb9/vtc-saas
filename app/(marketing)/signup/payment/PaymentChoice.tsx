@@ -60,9 +60,20 @@ export default function PaymentChoice({ tenantId, providers }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenant_id: tenantId, provider }),
       })
-      const json = await res.json()
+      // Lecture résiliente : si la réponse est vide ou non-JSON, on évite
+      // le crash "Unexpected end of JSON input" et on affiche un message
+      // explicite à l'utilisateur.
+      const text = await res.text()
+      let json: { checkout_url?: string; manual_claim?: boolean; amount_fcfa?: number; session_id?: string; error?: string } = {}
+      if (text) {
+        try { json = JSON.parse(text) } catch {
+          setError(`Réponse serveur invalide (HTTP ${res.status}) : ${text.slice(0, 150)}`)
+          setLoading(null)
+          return
+        }
+      }
       if (!res.ok || !json.checkout_url) {
-        setError(json.error || `HTTP ${res.status}`)
+        setError(json.error || `Erreur paiement (HTTP ${res.status}). Réessayez dans quelques secondes ou contactez le support.`)
         setLoading(null)
         return
       }
@@ -73,9 +84,9 @@ export default function PaymentChoice({ tenantId, providers }: Props) {
         window.open(json.checkout_url, "_blank", "noopener,noreferrer")
         setClaim({
           provider,
-          amountFcfa:  json.amount_fcfa,
+          amountFcfa:  json.amount_fcfa ?? 0,
           checkoutUrl: json.checkout_url,
-          sessionId:   json.session_id,
+          sessionId:   json.session_id ?? "",
         })
         setLoading(null)
       } else {

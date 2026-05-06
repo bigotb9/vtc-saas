@@ -110,21 +110,31 @@ export async function POST(req: NextRequest) {
 
   const phone = (tenant.signup_data as Record<string, unknown> | null)?.phone as string | undefined
 
-  const session = await getProvider(provider).createCheckoutSession({
-    tenantId,
-    invoiceId,
-    amountFcfa,
-    description,
-    customerEmail: tenant.email_admin,
-    customerPhone: phone,
-    successUrl,
-    cancelUrl,
-    metadata: {
-      tenant_id:  tenantId,
-      invoice_id: invoiceId,
-      purpose,
-    },
-  })
+  let session
+  try {
+    session = await getProvider(provider).createCheckoutSession({
+      tenantId,
+      invoiceId,
+      amountFcfa,
+      description,
+      customerEmail: tenant.email_admin,
+      customerPhone: phone,
+      successUrl,
+      cancelUrl,
+      metadata: {
+        tenant_id:  tenantId,
+        invoice_id: invoiceId,
+        purpose,
+      },
+    })
+  } catch (e) {
+    const msg = (e as Error).message || String(e)
+    console.error("[create-checkout] provider failed:", msg)
+    return NextResponse.json({
+      error: `Impossible de créer la session de paiement : ${msg}`,
+      provider,
+    }, { status: 502 })
+  }
 
   return NextResponse.json({
     checkout_url:  session.checkoutUrl,
