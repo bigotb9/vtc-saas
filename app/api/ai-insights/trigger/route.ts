@@ -4,8 +4,11 @@
  * n8n fait tout : fetche Supabase, appelle Claude, écrit en base, répond.
  */
 import { NextResponse } from "next/server"
+import { ensureFeature } from "@/lib/featureGuard"
 
 export async function POST() {
+  const blocked = await ensureFeature("ai_insights")
+  if (blocked) return blocked
   const webhookUrl = process.env.N8N_WEBHOOK_ANALYSE_URL
 
   if (!webhookUrl) {

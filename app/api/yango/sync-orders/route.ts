@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getTenantAdmin } from "@/lib/supabaseTenant"
+import { ensureFeature } from "@/lib/featureGuard"
 
 export const maxDuration = 60
 
@@ -60,6 +61,8 @@ async function fetchYangoPage(
 }
 
 export async function POST(req: NextRequest) {
+  const blocked = await ensureFeature("yango")
+  if (blocked) return blocked
   const t0 = Date.now()
   try {
     const supabase  = await getTenantAdmin()

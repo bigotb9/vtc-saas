@@ -5,8 +5,11 @@
  */
 import { NextResponse } from "next/server"
 import { getTenantAdmin } from "@/lib/supabaseTenant"
+import { ensureFeature } from "@/lib/featureGuard"
 
 export async function GET() {
+  const blocked = await ensureFeature("ai_insights")
+  if (blocked) return blocked
   try {
     const sb = await getTenantAdmin()
     // Dernière analyse (auto ou manuelle)

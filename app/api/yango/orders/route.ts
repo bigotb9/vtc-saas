@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getTenantAdmin } from "@/lib/supabaseTenant"
+import { ensureFeature } from "@/lib/featureGuard"
 
 export const maxDuration = 30
 
 export async function GET(req: NextRequest) {
+  const blocked = await ensureFeature("yango")
+  if (blocked) return blocked
   const supabase = await getTenantAdmin()
   try {
     const { searchParams } = new URL(req.url)

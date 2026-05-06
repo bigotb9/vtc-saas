@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
+import { ensureFeature } from "@/lib/featureGuard"
 
 export async function GET() {
+  const blocked = await ensureFeature("yango")
+  if (blocked) return blocked
   try {
     const url    = process.env.YANGO_DRIVERS_URL
     const apiKey = process.env.YANGO_DRIVERS_API_KEY

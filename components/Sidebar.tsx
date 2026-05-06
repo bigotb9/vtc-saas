@@ -12,7 +12,7 @@ import {
   LogOut, Building2, UserCheck, Activity, PanelLeftClose, PanelLeftOpen, MapPin
 } from "lucide-react"
 import { useProfile } from "@/hooks/useProfile"
-import { useTenant } from "@/components/TenantProvider"
+import { useTenant, useFeature } from "@/components/TenantProvider"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSidebar } from "@/lib/SidebarContext"
 
@@ -146,6 +146,12 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
   const { isDirecteur, can } = useProfile()
   const { tenant } = useTenant()
 
+  // Gardes par feature plan : ne pas afficher les sections que le plan
+  // courant ne couvre pas (ex: Yango pour Silver, AI Insights pour Silver/Gold).
+  const hasYango       = useFeature("yango")
+  const hasAiInsights  = useFeature("ai_insights")
+  const hasFleetClients = useFeature("fleet_clients")
+
   type AuthUser = { email?: string; user_metadata?: { name?: string; display_name?: string } }
   const [user, setUser] = useState<AuthUser | null>(null)
   const [openBoyah, setOpenBoyah] = useState(pathname.startsWith("/boyah-transport"))
@@ -243,8 +249,8 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
           {can("view_depenses") && <NavLink href="/depenses" label="Dépenses" icon={TrendingDown} collapsed={collapsed} />}
         </div>
 
-        <SectionLabel label="Services" collapsed={collapsed} />
-        <div className="space-y-0.5">
+        {hasYango && <SectionLabel label="Services" collapsed={collapsed} />}
+        {hasYango && <div className="space-y-0.5">
           {collapsed ? (
             <NavLink href="/boyah-transport/dashboard" label={BOYAH_SERVICE_LABEL} icon={Truck} collapsed={collapsed} />
           ) : (
@@ -318,11 +324,11 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
               </AnimatePresence>
             </>
           )}
-        </div>
+        </div>}
 
         <SectionLabel label="Système" collapsed={collapsed} />
         <div className="space-y-0.5">
-          {can("view_ai_insights") && <NavLink href="/ai-insights-boyah-group" label="AI Insights" icon={Brain}    collapsed={collapsed} />}
+          {hasAiInsights && can("view_ai_insights") && <NavLink href="/ai-insights-boyah-group" label="AI Insights" icon={Brain}    collapsed={collapsed} />}
           {isDirecteur            && <NavLink href="/journal-activite"        label="Journal"     icon={Activity} collapsed={collapsed} />}
           <NavLink href="/parametres" label="Paramètres" icon={Settings} collapsed={collapsed} />
         </div>

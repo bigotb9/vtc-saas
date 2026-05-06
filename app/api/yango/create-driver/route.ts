@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
+import { ensureFeature } from "@/lib/featureGuard"
 
 export async function POST(req: NextRequest) {
+  const blocked = await ensureFeature("yango")
+  if (blocked) return blocked
   try {
     const url    = process.env.YANGO_CREATE_DRIVER_URL
     const apiKey = process.env.YANGO_CREATE_DRIVER_API_KEY
