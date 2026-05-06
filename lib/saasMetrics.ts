@@ -1,6 +1,6 @@
 import "server-only"
 import { supabaseMaster } from "@/lib/supabaseMaster"
-import { PLAN_ORDER, type PlanId } from "@/lib/plans"
+import { ADDONS, getSignupTotalFcfa, PLAN_ORDER, type AddonId, type BillingCycle, type PlanId } from "@/lib/plans"
 
 /**
  * Calcul des métriques business SaaS pour le tableau de bord admin.
@@ -14,6 +14,19 @@ import { PLAN_ORDER, type PlanId } from "@/lib/plans"
  * Revenus encaissés ce mois : sum invoices.amount_fcfa où paid_at >= début mois.
  */
 
+export type PendingWaveValidation = {
+  tenant_id:        string
+  slug:             string
+  nom:              string
+  email_admin:      string
+  plan_name:        string
+  cycle:            "monthly" | "yearly"
+  expected_amount_fcfa: number
+  transaction_ref:  string
+  payer_phone:      string | null
+  claimed_at:       string
+}
+
 export type SaasMetrics = {
   mrr_fcfa:                  number
   arr_fcfa:                  number
@@ -26,6 +39,10 @@ export type SaasMetrics = {
   revenue_this_month_fcfa:   number
   revenue_last_month_fcfa:   number
   signups_this_month:        number
+
+  // Paiements Wave que le client a déclarés mais que l'admin SaaS n'a
+  // pas encore validés. À traiter en priorité depuis le dashboard.
+  pending_wave_validations:  PendingWaveValidation[]
 }
 
 
@@ -113,6 +130,43 @@ export async function computeSaasMetrics(): Promise<SaasMetrics> {
     .select("*", { count: "exact", head: true })
     .gte("created_at", startOfMonth.toISOString())
 
+  // ─── Paiements Wave déclarés mais non validés ───
+  // Tenants en awaiting_payment qui ont une wave_claim dans signup_data.
+  const { data: pendingTenants } = await supabaseMaster
+    .from("tenants")
+    .select("id, slug, nom, email_admin, signup_plan_id, signup_billing_cycle, signup_data")
+    .eq("provisioning_status", "awaiting_payment")
+    .not("signup_data", "is", null)
+
+  const PLAN_NAMES: Record<string, string> = { silver: "Silver", gold: "Gold", platinum: "Platinum" }
+  const pending_wave_validations: PendingWaveValidation[] = []
+  for (const t of pendingTenants ?? []) {
+    const data = (t.signup_data ?? {}) as Record<string, unknown>
+    const claim = data.wave_claim as { transaction_ref?: string; payer_phone?: string | null; claimed_at?: string } | undefined
+    if (!claim?.transaction_ref || !claim?.claimed_at) continue
+
+    const planId = (t.signup_plan_id || "silver") as PlanId
+    const cycle  = (t.signup_billing_cycle || "monthly") as BillingCycle
+    const addons = ((data.addons as string[] | undefined) ?? [])
+      .filter((id): id is AddonId => !!ADDONS[id as AddonId])
+    const totals = getSignupTotalFcfa(planId, cycle, addons)
+
+    pending_wave_validations.push({
+      tenant_id:            t.id,
+      slug:                 t.slug,
+      nom:                  t.nom,
+      email_admin:          t.email_admin,
+      plan_name:            PLAN_NAMES[planId] || planId,
+      cycle,
+      expected_amount_fcfa: totals.cycleTotal,
+      transaction_ref:      claim.transaction_ref,
+      payer_phone:          claim.payer_phone ?? null,
+      claimed_at:           claim.claimed_at,
+    })
+  }
+  // Tri : plus ancien claim en premier (à traiter en priorité)
+  pending_wave_validations.sort((a, b) => a.claimed_at.localeCompare(b.claimed_at))
+
   return {
     mrr_fcfa:                   Math.round(mrr_fcfa),
     arr_fcfa:                   Math.round(mrr_fcfa * 12),
@@ -125,5 +179,6 @@ export async function computeSaasMetrics(): Promise<SaasMetrics> {
     revenue_this_month_fcfa,
     revenue_last_month_fcfa,
     signups_this_month:         signups_this_month ?? 0,
+    pending_wave_validations,
   }
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { supabaseMasterClient as sb } from "@/lib/supabaseMasterClient"
-import { Building2, CheckCircle2, AlertCircle, Loader2, Banknote, TrendingDown, Calendar, Wallet } from "lucide-react"
+import { Building2, CheckCircle2, AlertCircle, Loader2, Banknote, TrendingDown, Calendar, Wallet, Smartphone, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import { formatFcfa } from "@/lib/plans"
 
@@ -11,6 +11,19 @@ type Stats = {
   active:     number
   pending:    number
   failed:     number
+}
+
+type PendingWaveValidation = {
+  tenant_id:            string
+  slug:                 string
+  nom:                  string
+  email_admin:          string
+  plan_name:            string
+  cycle:                "monthly" | "yearly"
+  expected_amount_fcfa: number
+  transaction_ref:      string
+  payer_phone:          string | null
+  claimed_at:           string
 }
 
 type Metrics = {
@@ -25,6 +38,7 @@ type Metrics = {
   revenue_this_month_fcfa:   number
   revenue_last_month_fcfa:   number
   signups_this_month:        number
+  pending_wave_validations:  PendingWaveValidation[]
 }
 
 export default function SaasDashboard() {
@@ -76,6 +90,11 @@ export default function SaasDashboard() {
         <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">Tour de contrôle</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Vue d&apos;ensemble des clients et de leur état</p>
       </div>
+
+      {/* Paiements Wave à vérifier — priorité absolue, en haut du dashboard */}
+      {metrics && metrics.pending_wave_validations.length > 0 && (
+        <PendingWavePayments items={metrics.pending_wave_validations} />
+      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {cards.map((c, i) => {
@@ -178,4 +197,74 @@ function SubCard({ label, value, icon: Icon }: { label: string; value: string | 
       {Icon && <Icon size={14} className="text-gray-400" />}
     </div>
   )
+}
+
+
+function PendingWavePayments({ items }: { items: PendingWaveValidation[] }) {
+  return (
+    <div className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-500/10 dark:to-transparent border-2 border-amber-300 dark:border-amber-500/40 rounded-2xl p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center text-amber-700 dark:text-amber-400 shrink-0">
+            <Smartphone size={20} />
+          </div>
+          <div>
+            <h2 className="font-bold text-gray-900 dark:text-white text-lg">
+              {items.length} paiement{items.length > 1 ? "s" : ""} Wave à vérifier
+            </h2>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
+              Vérifie chaque transaction sur Wave Business, puis active le compte du client.
+            </p>
+          </div>
+        </div>
+        <span className="inline-flex items-center justify-center rounded-full bg-red-500 text-white text-sm font-bold w-8 h-8 shadow-md">
+          {items.length}
+        </span>
+      </div>
+
+      <div className="space-y-2">
+        {items.map(item => (
+          <Link
+            key={item.tenant_id}
+            href={`/saas/tenants/${item.tenant_id}`}
+            className="block bg-white dark:bg-white/[0.02] rounded-xl border border-amber-200/60 dark:border-amber-500/20 hover:border-amber-400 dark:hover:border-amber-500/50 transition p-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-sm">{item.nom}</span>
+                  <span className="text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-500/20 px-1.5 py-0.5 rounded">
+                    {item.plan_name} {item.cycle === "yearly" ? "annuel" : "mensuel"}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-3 flex-wrap">
+                  <span className="font-mono"><strong>Tx :</strong> {item.transaction_ref}</span>
+                  {item.payer_phone && <span><strong>Tél :</strong> {item.payer_phone}</span>}
+                  <span className="text-gray-400">{relativeTime(item.claimed_at)}</span>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="font-bold text-emerald-700 dark:text-emerald-400">{formatFcfa(item.expected_amount_fcfa)}</div>
+                <div className="text-xs text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1 mt-0.5">
+                  Vérifier <ArrowRight size={12} />
+                </div>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+
+function relativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime()
+  const m = Math.round(ms / 60000)
+  if (m < 1) return "à l'instant"
+  if (m < 60) return `il y a ${m} min`
+  const h = Math.round(m / 60)
+  if (h < 24) return `il y a ${h} h`
+  const d = Math.round(h / 24)
+  return `il y a ${d} j`
 }
