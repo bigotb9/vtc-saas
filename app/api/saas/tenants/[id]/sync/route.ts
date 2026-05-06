@@ -4,7 +4,8 @@ import path from "path"
 import { createClient } from "@supabase/supabase-js"
 import { supabaseMaster } from "@/lib/supabaseMaster"
 import { supabaseManagement } from "@/lib/supabaseManagement"
-import { requireSaasAdmin } from "@/lib/saasAuth"
+import { requireSaasAdminOrInternal } from "@/lib/saasAuth"
+import { sendWelcomeEmail } from "@/lib/email"
 
 /**
  * POST /api/saas/tenants/[id]/sync
@@ -27,7 +28,7 @@ async function logStep(tenantId: string, step: string, status: "started"|"succes
 }
 
 export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  const admin = await requireSaasAdmin(req)
+  const admin = await requireSaasAdminOrInternal(req)
   if (admin instanceof NextResponse) return admin
 
   const { id } = await ctx.params
@@ -231,6 +232,23 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     .eq("id", tenant.id)
     .select()
     .single()
+
+  // 8. Email de bienvenue (best-effort, n'échoue pas le provisioning).
+  //    Idempotent par dedup_key 'welcome-<tenant_id>' : si /sync est rappelé
+  //    (race condition) on n'envoie pas un 2e mail.
+  try {
+    const baseUrl = process.env.SITE_BASE_URL || "https://vtcdashboard.com"
+    const loginUrl = `${baseUrl}/?t=${tenant.slug}`
+    await sendWelcomeEmail({
+      tenantId:    tenant.id,
+      toEmail:     tenant.email_admin,
+      toName:      tenant.nom,
+      tenantName:  tenant.nom,
+      loginUrl,
+    })
+  } catch (e) {
+    console.error("[welcome_email]", (e as Error).message)
+  }
 
   return NextResponse.json({ tenant: finalTenant, done: true })
 }

@@ -43,3 +43,27 @@ export async function requireSaasAdmin(req: NextRequest) {
 
   return admin as { id: string; email: string; nom: string | null; role: string }
 }
+
+
+/**
+ * Variante qui accepte AUSSI les appels internes du worker de provisioning
+ * (cron, after()). Le worker s'authentifie avec un Bearer = INTERNAL_WORKER_TOKEN
+ * + header x-internal-worker = "1".
+ *
+ * Pour les API routes que le worker appelle (ex: /sync), utiliser celle-ci
+ * à la place de requireSaasAdmin.
+ */
+export async function requireSaasAdminOrInternal(req: NextRequest) {
+  const internalHeader = req.headers.get("x-internal-worker")
+  const auth = req.headers.get("authorization")
+
+  if (internalHeader === "1" && auth?.startsWith("Bearer ")) {
+    const expected = process.env.INTERNAL_WORKER_TOKEN
+    if (expected && auth.slice(7) === expected) {
+      return { id: "internal-worker", email: "worker@internal", nom: "Worker", role: "internal" } as const
+    }
+    return NextResponse.json({ error: "invalid_internal_token" }, { status: 401 })
+  }
+
+  return requireSaasAdmin(req)
+}

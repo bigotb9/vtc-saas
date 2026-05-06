@@ -20,10 +20,21 @@ import { NextRequest, NextResponse } from "next/server"
  *   - `/_next/*`, statiques
  */
 
-const PUBLIC_PREFIXES = ["/saas", "/api/saas", "/api/public", "/_next", "/favicon", "/icon"]
+const PUBLIC_PREFIXES = ["/saas", "/api/saas", "/api/public", "/api/signup", "/api/payment", "/api/webhooks", "/api/cron", "/dev", "/pay", "/_next", "/favicon", "/icon"]
+
+/**
+ * Routes accessibles SANS tenant — la landing publique vtcdashboard.com.
+ * Sur ces paths on n'exige pas de slug et on rewrite vers /(marketing)/* pour
+ * servir l'UI publique au lieu de l'app tenant.
+ */
+const MARKETING_PATHS = ["/", "/pricing", "/signup", "/landing"]
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PREFIXES.some(p => pathname === p || pathname.startsWith(p + "/"))
+}
+
+function isMarketingPath(pathname: string): boolean {
+  return MARKETING_PATHS.includes(pathname)
 }
 
 /**
@@ -91,6 +102,17 @@ export function proxy(req: NextRequest) {
 
   const requestHeaders = new Headers(req.headers)
   if (slug) requestHeaders.set("x-tenant-slug", slug)
+
+  // Rewrite "/" vers "/landing" quand on est sur le domaine racine (pas de
+  // slug résolu). L'URL navigateur ne change pas — le serveur sert la
+  // landing publique au lieu de la page de login tenant.
+  // Les autres paths marketing (/pricing, /signup, /landing) passent sans
+  // rewrite — ils sont accessibles aux visiteurs et aux tenants.
+  if (!slug && pathname === "/") {
+    const url = req.nextUrl.clone()
+    url.pathname = "/landing"
+    return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
+  }
 
   const res = NextResponse.next({ request: { headers: requestHeaders } })
   if (slug) {

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react"
 import { supabaseMasterClient as sb } from "@/lib/supabaseMasterClient"
-import { Building2, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Building2, CheckCircle2, AlertCircle, Loader2, Banknote, TrendingDown, Calendar, Wallet } from "lucide-react"
 import Link from "next/link"
+import { formatFcfa } from "@/lib/plans"
 
 type Stats = {
   total:      number
@@ -12,26 +13,52 @@ type Stats = {
   failed:     number
 }
 
+type Metrics = {
+  mrr_fcfa:                  number
+  arr_fcfa:                  number
+  active_customers:          number
+  customers_by_plan:         { silver: number; gold: number; platinum: number }
+  customers_in_arrears:      number
+  customers_suspended:       number
+  customers_awaiting_payment: number
+  churn_rate_30d:            number
+  revenue_this_month_fcfa:   number
+  revenue_last_month_fcfa:   number
+  signups_this_month:        number
+}
+
 export default function SaasDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [metrics, setMetrics] = useState<Metrics | null>(null)
 
   useEffect(() => {
     const load = async () => {
       const { data: sess } = await sb.auth.getSession()
       if (!sess.session) return
-      const res = await fetch("/api/saas/tenants", {
-        headers: { Authorization: `Bearer ${sess.session.access_token}` },
-      })
-      if (!res.ok) { setStats({ total: 0, active: 0, pending: 0, failed: 0 }); return }
-      const { tenants } = await res.json()
-      const s: Stats = { total: 0, active: 0, pending: 0, failed: 0 }
-      for (const t of tenants || []) {
-        s.total++
-        if (t.statut === "active" && t.provisioning_status === "ready") s.active++
-        else if (t.provisioning_status === "failed")                     s.failed++
-        else if (t.provisioning_status !== "ready")                      s.pending++
+      const headers = { Authorization: `Bearer ${sess.session.access_token}` }
+
+      const [tenantsRes, metricsRes] = await Promise.all([
+        fetch("/api/saas/tenants",  { headers }),
+        fetch("/api/saas/metrics",  { headers }),
+      ])
+
+      if (tenantsRes.ok) {
+        const { tenants } = await tenantsRes.json()
+        const s: Stats = { total: 0, active: 0, pending: 0, failed: 0 }
+        for (const t of tenants || []) {
+          s.total++
+          if (t.statut === "active" && t.provisioning_status === "ready") s.active++
+          else if (t.provisioning_status === "failed")                     s.failed++
+          else if (t.provisioning_status !== "ready")                      s.pending++
+        }
+        setStats(s)
+      } else {
+        setStats({ total: 0, active: 0, pending: 0, failed: 0 })
       }
-      setStats(s)
+
+      if (metricsRes.ok) {
+        setMetrics(await metricsRes.json() as Metrics)
+      }
     }
     load()
   }, [])
@@ -78,17 +105,77 @@ export default function SaasDashboard() {
         })}
       </div>
 
-      <div className="bg-white dark:bg-[#0D1424] rounded-2xl border border-gray-100 dark:border-[#1E2D45] p-5">
-        <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Onboarder un nouveau client</h2>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-          Le provisioning crée automatiquement un projet Supabase pour le client (~2 min), exécute le schéma initial,
-          crée son compte admin et l&apos;ajoute à la liste des tenants.
-        </p>
-        <Link href="/saas/tenants/new"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-500/20">
-          + Nouveau client
-        </Link>
+      {/* KPIs business */}
+      <div>
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Business</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <BusinessCard label="MRR"             value={metrics ? formatFcfa(metrics.mrr_fcfa) : "—"}    icon={Banknote}  grad="from-emerald-500 to-teal-600" />
+          <BusinessCard label="ARR (estimé)"    value={metrics ? formatFcfa(metrics.arr_fcfa) : "—"}    icon={TrendingDown} grad="from-amber-500 to-orange-600" />
+          <BusinessCard label="Revenus du mois" value={metrics ? formatFcfa(metrics.revenue_this_month_fcfa) : "—"} icon={Wallet} grad="from-fuchsia-500 to-pink-600" />
+          <BusinessCard label="Churn (30j)"     value={metrics ? `${metrics.churn_rate_30d}%` : "—"}    icon={TrendingDown} grad="from-red-500 to-rose-600" />
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+          <SubCard label="Silver"             value={metrics?.customers_by_plan.silver ?? "—"} />
+          <SubCard label="Gold"               value={metrics?.customers_by_plan.gold   ?? "—"} />
+          <SubCard label="Platinum"           value={metrics?.customers_by_plan.platinum ?? "—"} />
+          <SubCard label="Inscrits ce mois"   value={metrics?.signups_this_month ?? "—"} icon={Calendar} />
+        </div>
+
+        {metrics && (metrics.customers_in_arrears > 0 || metrics.customers_suspended > 0) && (
+          <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-500/10 dark:border-amber-500/30 p-3 text-sm flex items-start gap-2">
+            <AlertCircle size={16} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <div>
+              <strong>Attention :</strong> {metrics.customers_in_arrears} client{metrics.customers_in_arrears > 1 ? "s" : ""} en retard de paiement,
+              {" "}{metrics.customers_suspended} suspendu{metrics.customers_suspended > 1 ? "s" : ""}.
+            </div>
+          </div>
+        )}
       </div>
+
+      <div className="bg-white dark:bg-[#0D1424] rounded-2xl border border-gray-100 dark:border-[#1E2D45] p-5">
+        <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">Actions rapides</h2>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/saas/tenants/new"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-500/20">
+            + Nouveau client
+          </Link>
+          <a href="/api/saas/tenants/export"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-300 text-sm font-medium">
+            Exporter CSV
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+function BusinessCard({ label, value, icon: Icon, grad }: { label: string; value: string | number; icon: React.ElementType; grad: string }) {
+  return (
+    <div className="relative bg-white dark:bg-[#0D1424] rounded-2xl border border-gray-100 dark:border-[#1E2D45] p-4 overflow-hidden">
+      <div className={`absolute -top-5 -right-5 w-20 h-20 rounded-full bg-gradient-to-br ${grad} opacity-10 blur-2xl`} />
+      <div className="relative flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label}</p>
+          <p className="text-2xl font-black mt-1 text-gray-900 dark:text-white">{value}</p>
+        </div>
+        <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${grad} flex items-center justify-center shadow-md`}>
+          <Icon size={15} className="text-white" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function SubCard({ label, value, icon: Icon }: { label: string; value: string | number; icon?: React.ElementType }) {
+  return (
+    <div className="bg-white dark:bg-[#0D1424] rounded-xl border border-gray-100 dark:border-[#1E2D45] p-3 flex items-center justify-between">
+      <div>
+        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label}</p>
+        <p className="text-xl font-bold mt-0.5 text-gray-900 dark:text-white">{value}</p>
+      </div>
+      {Icon && <Icon size={14} className="text-gray-400" />}
     </div>
   )
 }

@@ -1,18 +1,29 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { supabase } from "@/lib/supabaseClient"
 import { useTenant } from "@/components/TenantProvider"
 import Image from "next/image"
 
+// Routes accessibles sans authentification mais dans le contexte tenant
+// (forgot-password, reset-password). On laisse passer sans redirect.
+const PUBLIC_TENANT_PATHS = ["/forgot-password", "/reset-password"]
+
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   const router = useRouter()
+  const pathname = usePathname() || ""
   const { tenant } = useTenant()
   const [loading, setLoading] = useState(true)
 
+  const isPublicTenantPath = PUBLIC_TENANT_PATHS.some(p => pathname === p || pathname.startsWith(p + "/"))
+
   useEffect(() => {
+    if (isPublicTenantPath) {
+      setLoading(false)
+      return
+    }
 
     const checkSession = async () => {
       try {
@@ -41,7 +52,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     checkSession()
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [isPublicTenantPath])
 
   if (loading) {
     return (

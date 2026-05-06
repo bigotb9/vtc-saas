@@ -4,6 +4,14 @@ import { createContext, useContext, useEffect, useState } from "react"
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { Loader2, AlertTriangle } from "lucide-react"
 import { setSupabaseClient } from "@/lib/supabaseClient"
+import type { TenantPlanContext } from "@/lib/plans"
+import {
+  checkQuota,
+  hasFeature,
+  type FeatureKey,
+  type QuotaCheck,
+  type QuotaKey,
+} from "@/lib/plans"
 
 export type TenantInfo = {
   nom:                string
@@ -17,6 +25,7 @@ export type TenantInfo = {
   logo_url:           string | null
   feature_flags:      Record<string, boolean>
   config:             Record<string, unknown>
+  plan_context:       TenantPlanContext
 }
 
 type TenantState = {
@@ -26,9 +35,37 @@ type TenantState = {
 
 const TenantContext = createContext<TenantState>({ tenant: null, client: null })
 
+const PlanContext = createContext<TenantPlanContext>({
+  planId: null,
+  status: null,
+  activeAddons: [],
+  featureOverrides: {},
+})
+
 /** Hook pour accéder au tenant courant et son client Supabase. */
 export function useTenant() {
   return useContext(TenantContext)
+}
+
+/** Hook pour accéder au contexte plan (côté client). */
+export function useTenantPlan(): TenantPlanContext {
+  return useContext(PlanContext)
+}
+
+/** Sucre syntaxique : vérifie si une feature est active pour le tenant courant. */
+export function useFeature(feature: FeatureKey): boolean {
+  const ctx = useTenantPlan()
+  return hasFeature(ctx, feature)
+}
+
+/**
+ * Vérifie un quota côté client. Le `current` doit être fourni par l'appelant
+ * (généralement obtenu via une query Supabase). Pour les routes API, utiliser
+ * plutôt enforceCurrentTenantQuota côté serveur.
+ */
+export function useQuota(kind: QuotaKey, current: number): QuotaCheck {
+  const ctx = useTenantPlan()
+  return checkQuota(ctx, kind, current)
 }
 
 /** Lit le cookie tenant_slug posé par le middleware. */
@@ -100,5 +137,11 @@ export default function TenantProvider({ children }: { children: React.ReactNode
     )
   }
 
-  return <TenantContext.Provider value={state}>{children}</TenantContext.Provider>
+  return (
+    <TenantContext.Provider value={state}>
+      <PlanContext.Provider value={state.tenant?.plan_context ?? { planId: null, status: null, activeAddons: [], featureOverrides: {} }}>
+        {children}
+      </PlanContext.Provider>
+    </TenantContext.Provider>
+  )
 }

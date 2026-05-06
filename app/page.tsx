@@ -3,10 +3,11 @@
 export const dynamic = "force-dynamic"
 
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
 import { useRouter } from "next/navigation"
 import { useTenant } from "@/components/TenantProvider"
-import { Eye, EyeOff, Mail, Lock, ArrowRight, Car, TrendingUp, Users, Zap } from "lucide-react"
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Car, TrendingUp, Users, Zap, ShieldCheck } from "lucide-react"
 import dynamicImport from "next/dynamic"
 
 const IsometricScene = dynamicImport(() => import("@/components/IsometricScene"), { ssr: false })
@@ -34,6 +35,11 @@ export default function LoginPage() {
     courses:    "…",
     commission: "2,5%",
   })
+  // 2FA challenge state — quand le user a un factor TOTP, après login pwd OK
+  // on affiche un écran de saisie du code à 6 chiffres au lieu de redirect.
+  const [mfaChallenge, setMfaChallenge] = useState<{ factorId: string; challengeId: string } | null>(null)
+  const [mfaCode, setMfaCode] = useState("")
+  const [mfaError, setMfaError] = useState("")
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -67,6 +73,41 @@ export default function LoginPage() {
     setError("")
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError(error.message); setLoading(false); return }
+
+    // Check si user a un factor MFA verified — si oui, on déclenche le challenge
+    // au lieu de rediriger directement vers le dashboard.
+    try {
+      const { data: factors } = await supabase.auth.mfa.listFactors()
+      const totp = factors?.totp?.find(f => f.status === "verified")
+      if (totp) {
+        const { data: chal, error: chalErr } = await supabase.auth.mfa.challenge({ factorId: totp.id })
+        if (chalErr) throw chalErr
+        setMfaChallenge({ factorId: totp.id, challengeId: chal!.id })
+        setLoading(false)
+        return
+      }
+    } catch (e) {
+      // En cas d'erreur listFactors, on ne bloque pas le login.
+      console.error("[mfa]", (e as Error).message)
+    }
+
+    router.push("/dashboard")
+  }
+
+  const verifyMfa = async () => {
+    if (!mfaChallenge || mfaCode.length !== 6) return
+    setLoading(true)
+    setMfaError("")
+    const { error } = await supabase.auth.mfa.verify({
+      factorId:    mfaChallenge.factorId,
+      challengeId: mfaChallenge.challengeId,
+      code:        mfaCode,
+    })
+    if (error) {
+      setMfaError(error.message)
+      setLoading(false)
+      return
+    }
     router.push("/dashboard")
   }
 
@@ -179,7 +220,52 @@ export default function LoginPage() {
             <p className="text-sm text-gray-500 mt-1">Accédez à votre espace de gestion</p>
           </div>
 
-          {/* Form card */}
+          {/* MFA Challenge Card — affiché après login pwd OK si user a un factor TOTP */}
+          {mfaChallenge ? (
+            <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-7 shadow-2xl space-y-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="text-indigo-400" size={20} />
+                <h2 className="text-white font-bold">Authentification en deux étapes</h2>
+              </div>
+              <p className="text-sm text-gray-400">
+                Saisissez le code à 6 chiffres généré par votre application d&apos;authentification.
+              </p>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => e.key === "Enter" && verifyMfa()}
+                placeholder="000000"
+                autoFocus
+                className="w-full bg-white/[0.05] border border-white/[0.08] text-white text-center text-2xl tracking-widest font-mono rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              />
+              {mfaError && (
+                <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400">
+                  {mfaError}
+                </div>
+              )}
+              <button
+                onClick={verifyMfa}
+                disabled={loading || mfaCode.length !== 6}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 disabled:opacity-40 text-white font-bold py-3 rounded-xl"
+              >
+                {loading
+                  ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <>Vérifier <ArrowRight size={15} /></>
+                }
+              </button>
+              <button
+                onClick={() => { setMfaChallenge(null); setMfaCode(""); supabase.auth.signOut() }}
+                className="w-full text-xs text-gray-500 hover:text-gray-300"
+              >
+                Annuler et revenir
+              </button>
+            </div>
+          ) : (
+          /* Form card */
           <div className="bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] rounded-2xl p-7 shadow-2xl">
             <div className="space-y-4">
 
@@ -231,8 +317,16 @@ export default function LoginPage() {
                 }
               </button>
 
+              {/* Forgot password link */}
+              <div className="text-center pt-1">
+                <Link href="/forgot-password" className="text-xs text-gray-500 hover:text-indigo-400 transition">
+                  Mot de passe oublié ?
+                </Link>
+              </div>
+
             </div>
           </div>
+          )}
 
           <p className="text-center text-xs text-gray-700 mt-6">
             © {new Date().getFullYear()} <span className="uppercase">{brandName}</span> · Plateforme VTC

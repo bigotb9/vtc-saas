@@ -13,6 +13,7 @@ import PageTransition from "@/components/PageTransition"
 import Toaster from "@/components/Toaster"
 import MobileNav from "@/components/MobileNav"
 import GlobalSearch, { useGlobalSearch } from "@/components/GlobalSearch"
+import SupportWidget from "@/components/SupportWidget"
 
 const geist     = Geist({ subsets: ["latin"], variable: "--font-geist" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
@@ -78,6 +79,7 @@ function TenantShell({ children }: { children: React.ReactNode }) {
           <AppShell>{children}</AppShell>
           <MobileNav />
           <Toaster />
+          <SupportWidget />
         </AuthGuard>
       </SidebarProvider>
     </TenantProvider>
@@ -87,12 +89,26 @@ function TenantShell({ children }: { children: React.ReactNode }) {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || ""
   const isSaasRoute = pathname.startsWith("/saas")
+  // Routes marketing (landing, pricing, signup) — pas de TenantShell, pas
+  // d'auth requise. Sont accessibles à tous, y compris depuis un tenant.
+  const isMarketingRoute =
+    pathname === "/landing" ||
+    pathname === "/pricing" ||
+    pathname === "/signup" ||
+    pathname.startsWith("/landing/") ||
+    pathname.startsWith("/pricing/") ||
+    pathname.startsWith("/signup/")
+  // Routes /dev/* sont des outils de développement (simulation paiement).
+  const isDevRoute = pathname.startsWith("/dev/")
+  // Routes /pay/* (paiement public d'une facture renewal via lien email).
+  const isPayRoute = pathname.startsWith("/pay/")
+  const skipTenantShell = isSaasRoute || isMarketingRoute || isDevRoute || isPayRoute
 
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={`${geist.variable} ${geistMono.variable} font-sans bg-gray-50 dark:bg-[#080C14] text-gray-900 dark:text-white`}>
         <ThemeProvider attribute="class" defaultTheme="dark">
-          {isSaasRoute ? children : <TenantShell>{children}</TenantShell>}
+          {skipTenantShell ? children : <TenantShell>{children}</TenantShell>}
         </ThemeProvider>
       </body>
     </html>

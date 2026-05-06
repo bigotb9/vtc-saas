@@ -15,6 +15,7 @@ import ErrorBoundary from "@/components/ErrorBoundary"
 import DashboardActions from "@/components/DashboardActions"
 import TachesSuiviWidget from "@/components/TachesSuiviWidget"
 import SuiviVersementsWidget from "@/components/SuiviVersementsWidget"
+import OnboardingChecklist from "@/components/OnboardingChecklist"
 
 export default async function DashboardPage() {
 
@@ -32,6 +33,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6 animate-in">
+
+      {/* ONBOARDING CHECKLIST (apparaît tant que les 3 étapes ne sont pas faites) */}
+      <OnboardingChecklist />
 
       {/* HEADER */}
       <PageHeader

@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse, after } from "next/server"
 import { supabaseMaster } from "@/lib/supabaseMaster"
 import { supabaseManagement } from "@/lib/supabaseManagement"
 import { requireSaasAdmin } from "@/lib/saasAuth"
+import { enqueueProvisioningJob, pickAndProcessOne, makeWorkerId } from "@/lib/provisioning"
 
 /**
  * Génère un mot de passe DB sécurisé (32 chars alphanumériques).
@@ -126,5 +127,30 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
 
-  return NextResponse.json({ tenant: updated || tenant, db_password_hint: "Password DB stocké côté Supabase, non récupérable. Reset via dashboard si besoin." })
+  // 4. Enqueue le job de provisioning (récupération keys + migration + admin user).
+  //    Le job sera processé en background via after() ci-dessous OU par le cron
+  //    /api/cron/process-provisioning si after() échoue.
+  const job = await enqueueProvisioningJob(tenant.id, { region })
+
+  // 5. Background processing : after() exécute le job APRÈS la réponse HTTP.
+  //    Passe par pickAndProcessOne() pour bénéficier du lock atomique SQL —
+  //    évite la race avec le cron qui pourrait pick le même job.
+  //    Si l'instance Vercel se termine avant, le cron prendra le relais.
+  after(async () => {
+    try {
+      await pickAndProcessOne(makeWorkerId())
+    } catch (e) {
+      console.error("[after][pickAndProcessOne]", (e as Error).message)
+    }
+  })
+
+  return NextResponse.json(
+    {
+      tenant:     updated || tenant,
+      job_id:     job.id,
+      message:    "Tenant créé, provisioning lancé en arrière-plan. Polle /api/saas/tenants/[id] pour suivre l'avancement.",
+      db_password_hint: "Password DB stocké côté Supabase, non récupérable. Reset via dashboard si besoin.",
+    },
+    { status: 202 },
+  )
 }
