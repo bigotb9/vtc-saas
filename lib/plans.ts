@@ -313,6 +313,47 @@ export function getYearlySavingsFcfa(planId: PlanId): number {
   return plan.priceMonthlyFcfa * 12 - plan.priceYearlyFcfa
 }
 
+/**
+ * Total à payer pour un signup ou un changement de plan, plan + addons compris.
+ * - cycle 'monthly' : (plan + sum addons) mensuel
+ * - cycle 'yearly'  : (plan + sum addons) × 12 × 0.85
+ *
+ * Les addons sans prix (ex: GPS sur devis) sont ignorés du calcul.
+ */
+export function getSignupTotalFcfa(
+  planId: PlanId,
+  cycle: BillingCycle,
+  addonIds: AddonId[],
+): { monthlyTotal: number; cycleTotal: number; planMonthly: number; addonsMonthly: number } {
+  const plan = PLANS[planId]
+  const planMonthly = plan.priceMonthlyFcfa
+  const addonsMonthly = addonIds.reduce((sum, id) => {
+    const a = ADDONS[id]
+    return sum + (a?.priceMonthlyFcfa ?? 0)
+  }, 0)
+  const monthlyTotal = planMonthly + addonsMonthly
+  const cycleTotal = cycle === "yearly"
+    ? Math.round(monthlyTotal * 12 * 0.85)
+    : monthlyTotal
+  return { monthlyTotal, cycleTotal, planMonthly, addonsMonthly }
+}
+
+/**
+ * Renvoie les addons disponibles à la souscription pour un plan donné.
+ * - Platinum : aucun (tout est inclus)
+ * - Silver / Gold : ai_insights + ai_agent (GPS exclu — sur devis)
+ */
+export function getAvailableAddonsForSignup(planId: PlanId): Addon[] {
+  const plan = PLANS[planId]
+  if (!plan) return []
+  return ADDON_ORDER
+    .map(id => ADDONS[id])
+    .filter(a =>
+      a.priceMonthlyFcfa !== null     // exclu GPS (sur devis)
+      && !plan.features[a.featureKey] // exclu si déjà inclus dans le plan
+    )
+}
+
 /** Format FCFA lisible : 50000 → "50 000 FCFA" */
 export function formatFcfa(amount: number): string {
   return amount.toLocaleString('fr-FR').replace(/,/g, ' ') + ' FCFA'

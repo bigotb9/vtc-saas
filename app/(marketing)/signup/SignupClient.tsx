@@ -1,10 +1,13 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { ArrowRight, Loader2, AlertCircle } from "lucide-react"
+import { useMemo, useState } from "react"
+import { ArrowRight, Loader2, AlertCircle, Sparkles, Check } from "lucide-react"
 import {
   formatFcfa,
+  getAvailableAddonsForSignup,
+  getSignupTotalFcfa,
+  type AddonId,
   type BillingCycle,
   type Plan,
   type PlanId,
@@ -23,6 +26,7 @@ export default function SignupClient({ plans, defaultPlan, defaultCycle }: Props
 
   const [planId, setPlanId] = useState<PlanId>(defaultPlan)
   const [cycle, setCycle]   = useState<BillingCycle>(defaultCycle)
+  const [addonIds, setAddonIds] = useState<AddonId[]>([])
   const [companyName, setCompanyName] = useState("")
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
@@ -31,10 +35,19 @@ export default function SignupClient({ plans, defaultPlan, defaultCycle }: Props
   const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   const selectedPlan = plans.find((p) => p.id === planId)!
-  const monthlyDisplay =
-    cycle === "monthly"
-      ? selectedPlan.priceMonthlyFcfa
-      : Math.round(selectedPlan.priceYearlyFcfa / 12)
+  const availableAddons = useMemo(() => getAvailableAddonsForSignup(planId), [planId])
+  // Reset les addons cochés si on change pour un plan qui ne les supporte pas
+  // (ex: passage Silver → Platinum doit décocher AI Insights car déjà inclus)
+  const validAddonIds = addonIds.filter(id => availableAddons.some(a => a.id === id))
+
+  const totals = useMemo(
+    () => getSignupTotalFcfa(planId, cycle, validAddonIds),
+    [planId, cycle, validAddonIds],
+  )
+
+  function toggleAddon(id: AddonId) {
+    setAddonIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -58,6 +71,7 @@ export default function SignupClient({ plans, defaultPlan, defaultCycle }: Props
           expected_vehicles: expectedVehicles || null,
           plan_id:           planId,
           billing_cycle:     cycle,
+          addons:            validAddonIds,
         }),
       })
       const json = await res.json()
@@ -126,19 +140,86 @@ export default function SignupClient({ plans, defaultPlan, defaultCycle }: Props
               Annuel <span className="text-amber-500">-15%</span>
             </button>
           </div>
-
-          <div className="mt-4 text-sm">
-            <span className="text-gray-500 dark:text-gray-400">À payer : </span>
-            <span className="font-bold">{formatFcfa(monthlyDisplay)}</span>
-            <span className="text-gray-500 dark:text-gray-400"> / mois</span>
-            {cycle === "yearly" && (
-              <span className="text-gray-500 dark:text-gray-400"> · facturé annuellement {formatFcfa(selectedPlan.priceYearlyFcfa)}</span>
-            )}
-          </div>
         </Section>
 
+        {/* Options (addons) */}
+        <Section title="2. Options supplémentaires (facultatif)">
+          {availableAddons.length === 0 ? (
+            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 p-4 text-sm text-emerald-800 dark:text-emerald-200 flex items-start gap-2">
+              <Check size={16} className="mt-0.5 shrink-0" />
+              <span>
+                Le plan <strong>{selectedPlan.name}</strong> inclut déjà toutes les options (AI Insights, Agent IA VTC).
+                Pas d&apos;options supplémentaires à activer.
+              </span>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {availableAddons.map((a) => {
+                const checked = validAddonIds.includes(a.id)
+                return (
+                  <label
+                    key={a.id}
+                    className={`flex items-start gap-3 cursor-pointer rounded-xl border p-4 transition ${
+                      checked
+                        ? "border-indigo-500 bg-indigo-50/40 dark:bg-indigo-500/10"
+                        : "border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.02] hover:border-gray-300"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleAddon(a.id)}
+                      className="mt-1 h-4 w-4 accent-indigo-600"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Sparkles size={14} className="text-indigo-500" />
+                        {a.name}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{a.description}</div>
+                    </div>
+                    <div className="text-sm font-semibold whitespace-nowrap">
+                      + {formatFcfa(a.priceMonthlyFcfa!)} <span className="text-xs text-gray-500 font-normal">/ mois</span>
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          )}
+        </Section>
+
+        {/* Récap total — calcul dynamique */}
+        <div className="rounded-2xl border border-indigo-200 dark:border-indigo-500/30 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-500/10 dark:to-transparent p-5">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Récapitulatif</h3>
+          <dl className="space-y-1.5 text-sm">
+            <div className="flex justify-between">
+              <dt className="text-gray-600 dark:text-gray-400">Plan {selectedPlan.name}</dt>
+              <dd>{formatFcfa(totals.planMonthly)} / mois</dd>
+            </div>
+            {validAddonIds.map(id => {
+              const a = availableAddons.find(x => x.id === id)!
+              return (
+                <div key={id} className="flex justify-between">
+                  <dt className="text-gray-600 dark:text-gray-400">{a.name}</dt>
+                  <dd>+ {formatFcfa(a.priceMonthlyFcfa!)} / mois</dd>
+                </div>
+              )
+            })}
+            <div className="border-t border-indigo-200 dark:border-indigo-500/30 mt-2 pt-2 flex justify-between font-bold">
+              <dt>Total mensuel</dt>
+              <dd>{formatFcfa(totals.monthlyTotal)}</dd>
+            </div>
+            {cycle === "yearly" && (
+              <div className="flex justify-between text-xs text-amber-700 dark:text-amber-400 mt-1">
+                <dt>Cycle annuel — vous payez (avec -15%)</dt>
+                <dd className="font-semibold">{formatFcfa(totals.cycleTotal)} / an</dd>
+              </div>
+            )}
+          </dl>
+        </div>
+
         {/* Entreprise & contact */}
-        <Section title="2. Votre entreprise">
+        <Section title="3. Votre entreprise">
           <div className="grid md:grid-cols-2 gap-4">
             <Field label="Nom de l'entreprise" required>
               <input

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseMaster } from "@/lib/supabaseMaster"
 import { getProvider, getAvailableProviders, type PaymentProvider } from "@/lib/payment"
-import { PLANS, type PlanId, type BillingCycle } from "@/lib/plans"
+import { ADDONS, getSignupTotalFcfa, PLANS, type AddonId, type PlanId, type BillingCycle } from "@/lib/plans"
 
 /**
  * POST /api/payment/create-checkout
@@ -87,8 +87,21 @@ export async function POST(req: NextRequest) {
     const plan = PLANS[tenant.signup_plan_id as PlanId]
     if (!plan) return NextResponse.json({ error: "Plan inconnu" }, { status: 400 })
     const cycle = (tenant.signup_billing_cycle || "monthly") as BillingCycle
-    amountFcfa = cycle === "yearly" ? plan.priceYearlyFcfa : plan.priceMonthlyFcfa
-    description = `${plan.name} ${cycle === "yearly" ? "annuel" : "mensuel"}`
+
+    // Récupère les addons cochés au signup
+    const signupAddons = (((tenant.signup_data as Record<string, unknown> | null) ?? {}).addons as string[] | undefined) ?? []
+    const addonIds = signupAddons.filter((id): id is AddonId => !!ADDONS[id as AddonId])
+
+    const totals = getSignupTotalFcfa(plan.id, cycle, addonIds)
+    amountFcfa = totals.cycleTotal
+
+    const cycleLabel = cycle === "yearly" ? "annuel" : "mensuel"
+    if (addonIds.length > 0) {
+      const addonNames = addonIds.map(id => ADDONS[id].name).join(" + ")
+      description = `${plan.name} ${cycleLabel} + ${addonNames}`
+    } else {
+      description = `${plan.name} ${cycleLabel}`
+    }
   }
 
   const baseUrl = process.env.SITE_BASE_URL || new URL(req.url).origin

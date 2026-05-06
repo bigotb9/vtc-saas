@@ -3,7 +3,8 @@ import { supabaseMaster } from "@/lib/supabaseMaster"
 import { supabaseManagement } from "@/lib/supabaseManagement"
 import { requireSaasAdmin } from "@/lib/saasAuth"
 import { enqueueProvisioningJob, pickAndProcessOne, makeWorkerId } from "@/lib/provisioning"
-import { PLANS, type PlanId, type BillingCycle } from "@/lib/plans"
+import { ADDONS, getSignupTotalFcfa, PLANS, type AddonId, type PlanId, type BillingCycle } from "@/lib/plans"
+import { activateSignupAddons } from "@/lib/subscriptionAddons"
 
 /**
  * POST /api/signup/[id]/confirm-payment
@@ -84,7 +85,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (cycle === "yearly") periodEnd.setFullYear(periodEnd.getFullYear() + 1)
   else                    periodEnd.setMonth(periodEnd.getMonth() + 1)
 
-  const amount = cycle === "yearly" ? plan.priceYearlyFcfa : plan.priceMonthlyFcfa
+  // Récupère les addons signup pour le calcul du montant
+  const signupData = (tenant.signup_data as Record<string, unknown> | null) ?? {}
+  const signupAddons = ((signupData.addons as string[] | undefined) ?? [])
+    .filter((id): id is AddonId => !!ADDONS[id as AddonId])
+  const totals = getSignupTotalFcfa(planId, cycle, signupAddons)
+  const amount = totals.cycleTotal
 
   // 3. Crée la subscription
   const { data: sub, error: subErr } = await supabaseMaster
@@ -107,7 +113,17 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
     return NextResponse.json({ error: `Création subscription échouée: ${subErr?.message}` }, { status: 500 })
   }
 
-  await logStep(tenant.id, "create_subscription", "success", `plan=${planId} cycle=${cycle}`)
+  await logStep(tenant.id, "create_subscription", "success",
+    `plan=${planId} cycle=${cycle}${signupAddons.length ? ` addons=${signupAddons.join(",")}` : ""}`)
+
+  // 3bis. Active les addons cochés au signup
+  const { activated: activatedAddons } = await activateSignupAddons({
+    tenantId:       tenant.id,
+    subscriptionId: sub.id,
+  })
+  if (activatedAddons.length > 0) {
+    await logStep(tenant.id, "activate_addons", "success", activatedAddons.join(","))
+  }
 
   // 4. Crée le projet Supabase
   const dbPassword = genDbPassword()

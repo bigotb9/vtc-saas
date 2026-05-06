@@ -1,7 +1,10 @@
 import Link from "next/link"
-import { Clock, ShieldCheck } from "lucide-react"
+import { Clock, ShieldCheck, Sparkles } from "lucide-react"
 import { supabaseMaster } from "@/lib/supabaseMaster"
-import { PLANS, formatFcfa, type PlanId } from "@/lib/plans"
+import {
+  ADDONS, getSignupTotalFcfa, PLANS, formatFcfa,
+  type AddonId, type PlanId,
+} from "@/lib/plans"
 import { getAvailableProviders } from "@/lib/payment"
 import PaymentChoice from "./PaymentChoice"
 import ProvisioningPoller from "./ProvisioningPoller"
@@ -40,7 +43,7 @@ export default async function PaymentPage({ searchParams }: Props) {
 
   const { data: tenant } = await supabaseMaster
     .from("tenants")
-    .select("id, slug, nom, email_admin, signup_plan_id, signup_billing_cycle, provisioning_status, signup_completed_at")
+    .select("id, slug, nom, email_admin, signup_plan_id, signup_billing_cycle, signup_data, provisioning_status, signup_completed_at")
     .eq("id", id)
     .maybeSingle()
 
@@ -63,7 +66,13 @@ export default async function PaymentPage({ searchParams }: Props) {
 
   const plan = PLANS[tenant.signup_plan_id as PlanId]
   const cycle = tenant.signup_billing_cycle as "monthly" | "yearly"
-  const totalAmount = cycle === "yearly" ? plan.priceYearlyFcfa : plan.priceMonthlyFcfa
+  const signupData = (tenant.signup_data as Record<string, unknown> | null) ?? {}
+  const addonIds = ((signupData.addons as string[] | undefined) ?? []).filter(
+    (id): id is AddonId => !!ADDONS[id as AddonId],
+  )
+  const selectedAddons = addonIds.map(id => ADDONS[id])
+  const totals = getSignupTotalFcfa(plan.id, cycle, addonIds)
+  const totalAmount = totals.cycleTotal
   const availableProviders = getAvailableProviders()
 
   return (
@@ -86,9 +95,32 @@ export default async function PaymentPage({ searchParams }: Props) {
           <Row label="Email admin"  value={tenant.email_admin} />
           <Row label="Plan choisi"  value={plan.name} />
           <Row label="Cycle"        value={cycle === "yearly" ? "Annuel (-15%)" : "Mensuel"} />
-          <div className="border-t border-gray-200 dark:border-white/10 pt-3 flex justify-between font-semibold">
-            <span>Total</span>
-            <span>{formatFcfa(totalAmount)} {cycle === "yearly" ? "/ an" : "/ mois"}</span>
+
+          {/* Détail tarifaire */}
+          <div className="border-t border-gray-200 dark:border-white/10 pt-3 space-y-2">
+            <div className="flex justify-between text-gray-600 dark:text-gray-400">
+              <span>Plan {plan.name}</span>
+              <span>{formatFcfa(plan.priceMonthlyFcfa)} / mois</span>
+            </div>
+            {selectedAddons.map(a => (
+              <div key={a.id} className="flex justify-between text-gray-600 dark:text-gray-400">
+                <span className="inline-flex items-center gap-1.5">
+                  <Sparkles size={12} className="text-indigo-500" />
+                  {a.name}
+                </span>
+                <span>+ {formatFcfa(a.priceMonthlyFcfa!)} / mois</span>
+              </div>
+            ))}
+            <div className="border-t border-gray-200 dark:border-white/10 pt-2 flex justify-between font-semibold">
+              <span>Total mensuel</span>
+              <span>{formatFcfa(totals.monthlyTotal)}</span>
+            </div>
+            {cycle === "yearly" && (
+              <div className="flex justify-between text-amber-700 dark:text-amber-400 text-xs">
+                <span>Annuel (avec -15%) — vous payez maintenant</span>
+                <span className="font-bold">{formatFcfa(totalAmount)}</span>
+              </div>
+            )}
           </div>
         </dl>
       </div>

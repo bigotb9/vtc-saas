@@ -5,6 +5,8 @@ import { supabaseManagement } from "@/lib/supabaseManagement"
 import { enqueueProvisioningJob, pickAndProcessOne, makeWorkerId } from "@/lib/provisioning"
 import { PLANS, type PlanId, type BillingCycle } from "@/lib/plans"
 import { sendInvoicePaidEmail } from "@/lib/email"
+import { activateSignupAddons } from "@/lib/subscriptionAddons"
+import { getSignupTotalFcfa, ADDONS, type AddonId } from "@/lib/plans"
 import type { PaymentEvent } from "./types"
 
 /**
@@ -110,7 +112,12 @@ async function handleSignupPayment(event: PaymentEvent): Promise<{ ok: boolean; 
   if (cycle === "yearly") periodEnd.setFullYear(periodEnd.getFullYear() + 1)
   else                    periodEnd.setMonth(periodEnd.getMonth() + 1)
 
-  const amount = cycle === "yearly" ? plan.priceYearlyFcfa : plan.priceMonthlyFcfa
+  // Récupère les addons signup pour calculer le bon montant
+  const signupData = (tenant.signup_data as Record<string, unknown> | null) ?? {}
+  const signupAddons = ((signupData.addons as string[] | undefined) ?? [])
+    .filter((id): id is AddonId => !!ADDONS[id as AddonId])
+  const totals = getSignupTotalFcfa(planId, cycle, signupAddons)
+  const amount = totals.cycleTotal
 
   const { data: sub, error: subErr } = await supabaseMaster
     .from("subscriptions")
@@ -133,12 +140,38 @@ async function handleSignupPayment(event: PaymentEvent): Promise<{ ok: boolean; 
     return { ok: false, message: `Création subscription échouée: ${subErr?.message}` }
   }
 
-  // 2. Crée la facture initiale (payée)
+  // 1bis. Active les addons cochés au signup
+  const { activated: activatedAddons } = await activateSignupAddons({
+    tenantId:       tenant.id,
+    subscriptionId: sub.id,
+  })
+
+  // 2. Crée la facture initiale (payée) — détaille les lignes plan + addons
+  const lineItems: { label: string; amount_fcfa: number }[] = [
+    {
+      label:       `Plan ${plan.name} ${cycle === "yearly" ? "annuel" : "mensuel"}`,
+      amount_fcfa: cycle === "yearly" ? Math.round(plan.priceMonthlyFcfa * 12 * 0.85) : plan.priceMonthlyFcfa,
+    },
+    ...activatedAddons.map(id => {
+      const a = ADDONS[id]
+      const monthly = a.priceMonthlyFcfa ?? 0
+      return {
+        label:       `${a.name} (${cycle === "yearly" ? "annuel -15%" : "mensuel"})`,
+        amount_fcfa: cycle === "yearly" ? Math.round(monthly * 12 * 0.85) : monthly,
+      }
+    }),
+  ]
+
+  const description = activatedAddons.length > 0
+    ? `${plan.name} + ${activatedAddons.map(id => ADDONS[id].name).join(" + ")} (${cycle})`
+    : `Souscription ${plan.name} ${cycle === "yearly" ? "annuel" : "mensuel"}`
+
   const { invoice } = await createPaidInvoice({
     subscriptionId:    sub.id,
     tenantId:          tenant.id,
     amountFcfa:        amount,
-    description:       `Souscription ${plan.name} ${cycle === "yearly" ? "annuel" : "mensuel"}`,
+    description,
+    lineItems,
     provider:          event.provider,
     providerInvoiceId: event.providerSessionId,
     paidAt:            event.paidAt || now.toISOString(),
@@ -339,12 +372,16 @@ async function createPaidInvoice(opts: {
   tenantId:          string
   amountFcfa:        number
   description:       string
+  lineItems?:        { label: string; amount_fcfa: number }[]
   provider:          string
   providerInvoiceId?: string
   paidAt:            string
 }): Promise<{ invoice: { id: string; invoice_number: string } }> {
   const number = await nextInvoiceNumber()
   const now = new Date().toISOString()
+  const lines = opts.lineItems && opts.lineItems.length > 0
+    ? opts.lineItems
+    : [{ label: opts.description, amount_fcfa: opts.amountFcfa }]
   const { data, error } = await supabaseMaster
     .from("invoices")
     .insert({
@@ -354,7 +391,7 @@ async function createPaidInvoice(opts: {
       amount_fcfa:         opts.amountFcfa,
       currency:            "XOF",
       status:              "paid",
-      line_items:          [{ label: opts.description, amount_fcfa: opts.amountFcfa }],
+      line_items:          lines,
       issued_at:           now,
       due_at:              now,
       paid_at:             opts.paidAt,

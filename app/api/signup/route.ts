@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { supabaseMaster } from "@/lib/supabaseMaster"
-import { PLAN_ORDER, type BillingCycle, type PlanId } from "@/lib/plans"
+import {
+  ADDONS, getAvailableAddonsForSignup, PLAN_ORDER,
+  type AddonId, type BillingCycle, type PlanId,
+} from "@/lib/plans"
 
 /**
  * POST /api/signup
@@ -26,6 +29,7 @@ type SignupBody = {
   expected_vehicles?: number | null
   plan_id?:          string
   billing_cycle?:    string
+  addons?:           string[]
 }
 
 function slugify(s: string): string {
@@ -91,6 +95,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Cycle de facturation invalide" }, { status: 400 })
   }
 
+  // Validation addons : doivent être disponibles pour ce plan (ex: AI Insights
+  // n'est pas un addon valide pour Platinum car déjà inclus).
+  const requestedAddons = Array.isArray(body.addons) ? body.addons : []
+  const validAddons = getAvailableAddonsForSignup(planId as PlanId).map(a => a.id as string)
+  const addons: AddonId[] = []
+  for (const id of requestedAddons) {
+    if (typeof id !== "string") continue
+    if (!ADDONS[id as AddonId]) {
+      return NextResponse.json({ error: `Addon inconnu: ${id}` }, { status: 400 })
+    }
+    if (!validAddons.includes(id)) {
+      return NextResponse.json({
+        error: `L'addon ${id} n'est pas disponible pour le plan ${planId} (déjà inclus ou non compatible)`,
+      }, { status: 400 })
+    }
+    addons.push(id as AddonId)
+  }
+
   // ───── Vérifier qu'il n'existe pas déjà un tenant avec cet email en
   //       awaiting_payment depuis < 24h (anti-spam) ─────
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
@@ -103,7 +125,19 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   if (existingPending) {
-    // Réutilise le tenant existant — l'utilisateur peut continuer son paiement
+    // Réutilise le tenant existant — mais on met à jour ses choix (plan/cycle/addons)
+    // au cas où l'utilisateur ait changé d'avis avant de payer.
+    await supabaseMaster
+      .from("tenants")
+      .update({
+        nom:                  companyName,
+        signup_plan_id:       planId as PlanId,
+        signup_billing_cycle: cycle as BillingCycle,
+        signup_data: {
+          phone, country, expected_vehicles: expectedVehicles, addons,
+        },
+      })
+      .eq("id", existingPending.id)
     return NextResponse.json({
       signup_id: existingPending.id,
       slug:      existingPending.slug,
@@ -127,6 +161,7 @@ export async function POST(req: NextRequest) {
         phone,
         country,
         expected_vehicles: expectedVehicles,
+        addons,
       },
       signup_plan_id:       planId as PlanId,
       signup_billing_cycle: cycle as BillingCycle,
