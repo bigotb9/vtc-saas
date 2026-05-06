@@ -103,12 +103,15 @@ export function proxy(req: NextRequest) {
   const requestHeaders = new Headers(req.headers)
   if (slug) requestHeaders.set("x-tenant-slug", slug)
 
-  // Rewrite "/" vers "/landing" quand on est sur le domaine racine (pas de
-  // slug résolu). L'URL navigateur ne change pas — le serveur sert la
-  // landing publique au lieu de la page de login tenant.
-  // Les autres paths marketing (/pricing, /signup, /landing) passent sans
-  // rewrite — ils sont accessibles aux visiteurs et aux tenants.
-  if (!slug && pathname === "/") {
+  // Rewrite "/" vers "/landing" sur app host (vercel.app, localhost, domaine
+  // racine), même si un cookie tenant_slug est posé — sinon un visiteur sur
+  // vtcdashboard.com qui aurait visité un tenant auparavant atterrirait sur
+  // la page de login dudit tenant au lieu de la landing publique.
+  //
+  // Pour accéder volontairement à un tenant via app host : utiliser ?t=<slug>
+  // (override explicite, ce qui évite le rewrite).
+  const isHostApp = isAppHost(hostname)
+  if (pathname === "/" && !qSlug && (isHostApp || !slug)) {
     const url = req.nextUrl.clone()
     url.pathname = "/landing"
     return NextResponse.rewrite(url, { request: { headers: requestHeaders } })
