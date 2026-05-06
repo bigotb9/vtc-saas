@@ -319,13 +319,20 @@ export function getYearlySavingsFcfa(planId: PlanId): number {
  * - cycle 'yearly'  : (plan + sum addons) × 12 × 0.85
  *
  * Les addons sans prix (ex: GPS sur devis) sont ignorés du calcul.
+ *
+ * Tolérant : si planId n'est pas dans le catalogue (legacy, valeur invalide),
+ * renvoie des zéros au lieu de crasher. Les callers doivent eux-mêmes
+ * gérer ce cas pour afficher un message si pertinent.
  */
 export function getSignupTotalFcfa(
-  planId: PlanId,
+  planId: PlanId | null | undefined,
   cycle: BillingCycle,
   addonIds: AddonId[],
 ): { monthlyTotal: number; cycleTotal: number; planMonthly: number; addonsMonthly: number } {
-  const plan = PLANS[planId]
+  const plan = planId ? PLANS[planId] : undefined
+  if (!plan) {
+    return { monthlyTotal: 0, cycleTotal: 0, planMonthly: 0, addonsMonthly: 0 }
+  }
   const planMonthly = plan.priceMonthlyFcfa
   const addonsMonthly = addonIds.reduce((sum, id) => {
     const a = ADDONS[id]

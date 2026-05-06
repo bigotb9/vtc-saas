@@ -501,16 +501,21 @@ function WavePendingCard({ tenant, acting, onConfirm }: {
   acting:    "retry" | "delete" | "confirm-payment" | null
   onConfirm: () => void
 }) {
-  const claim = tenant.signup_data?.wave_claim
-  const planId = tenant.signup_plan_id as PlanId | null
+  // Lecture défensive : signup_data peut être null, ou un objet partiel,
+  // ou même contenir des champs inattendus selon les versions de tenant.
+  const sd = (tenant.signup_data ?? {}) as NonNullable<Tenant["signup_data"]>
+  const claim = sd.wave_claim
+  const planId = (tenant.signup_plan_id || null) as PlanId | null
   const cycle  = (tenant.signup_billing_cycle || "monthly") as BillingCycle
-  const addons = (tenant.signup_data?.addons || [])
-    .filter((id): id is AddonId => !!ADDONS[id as AddonId])
 
-  const expectedAmount = planId
-    ? getSignupTotalFcfa(planId, cycle, addons).cycleTotal
-    : 0
-  const planName = planId ? PLANS[planId]?.name ?? planId : "—"
+  const rawAddons = sd.addons
+  const addons: AddonId[] = Array.isArray(rawAddons)
+    ? rawAddons.filter((id): id is AddonId => typeof id === "string" && !!ADDONS[id as AddonId])
+    : []
+
+  const totals = getSignupTotalFcfa(planId, cycle, addons)
+  const expectedAmount = totals.cycleTotal
+  const planName = planId && PLANS[planId] ? PLANS[planId].name : (planId || "—")
 
   return (
     <div className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-500/10 dark:to-transparent border border-amber-300 dark:border-amber-500/30 rounded-2xl p-5">
