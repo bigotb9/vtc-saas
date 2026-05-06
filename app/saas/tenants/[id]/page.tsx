@@ -18,7 +18,7 @@ type Tenant = {
   email_admin:          string
   supabase_project_ref: string
   supabase_url:         string
-  plan:                 string
+  plan:                 string | null
   statut:               string
   provisioning_status:  string
   provisioning_error:   string | null
@@ -250,7 +250,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
           <h2 className="text-xs font-bold uppercase tracking-wider text-gray-400">Informations</h2>
           <Row icon={Mail}     label="Email admin" value={tenant.email_admin} />
           <Row icon={Hash}     label="Slug"        value={tenant.slug}        mono />
-          <Row icon={Package}  label="Plan"        value={tenant.plan.toUpperCase()} />
+          <Row icon={Package}  label="Plan"        value={(tenant.signup_plan_id || tenant.plan || "—").toUpperCase()} />
           <Row icon={Calendar} label="Créé"        value={new Date(tenant.created_at).toLocaleString("fr-FR")} />
           <Row icon={Calendar} label="MAJ"         value={new Date(tenant.updated_at).toLocaleString("fr-FR")} />
         </div>
