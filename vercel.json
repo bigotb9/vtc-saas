@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/process-provisioning",
-      "schedule": "* * * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/cron/lifecycle",
@@ -10,3 +10,4 @@
     }
   ]
 }
+
