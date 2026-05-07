@@ -574,7 +574,7 @@ function ClientCard({ client, moisActuel }: { client: Client; moisActuel: string
               <p className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{fmt(client.totaux.net_client)} F</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Bénéfice Boyah</p>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Bénéfice opérateur</p>
               <p className={`text-sm font-bold ${profitColor}`}>{sign(client.totaux.profit_boyah)} F</p>
             </div>
           </div>
@@ -610,7 +610,7 @@ function ClientCard({ client, moisActuel }: { client: Client; moisActuel: string
                   <table className="w-full min-w-[700px]">
                     <thead>
                       <tr className="bg-gray-50 dark:bg-white/[0.02]">
-                        {["Véhicule", "Montant mensuel", "Revenu", "Dépenses", "Charge Boyah (50k)", "Déduction client", "Net client", "Bénéfice Boyah"].map(h => (
+                        {["Véhicule", "Montant mensuel", "Revenu", "Dépenses", "Charge opérateur (50k)", "Déduction client", "Net client", "Bénéfice opérateur"].map(h => (
                           <th key={h} className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">{h}</th>
                         ))}
                       </tr>
@@ -715,10 +715,10 @@ export default function ClientsPage() {
         <KpiCard label="Total à reverser" value={loading || !global ? "—" : `${fmt(global.net_client)} F`}
           sub="Net après déductions dépenses"
           icon={Wallet} color="bg-gradient-to-br from-blue-400 to-indigo-500" textColor="text-indigo-600 dark:text-indigo-300" />
-        <KpiCard label="Charges Boyah" value={loading || !global ? "—" : `${fmt(global.boyah_support)} F`}
+        <KpiCard label="Charges opérateur" value={loading || !global ? "—" : `${fmt(global.boyah_support)} F`}
           sub="Dépenses supportées (50k/veh)"
           icon={TrendingDown} color="bg-gradient-to-br from-amber-400 to-orange-500" textColor="text-amber-600 dark:text-amber-300" />
-        <KpiCard label="Bénéfice Boyah" value={loading || !global ? "—" : `${sign(global.profit_boyah)} F`}
+        <KpiCard label="Bénéfice opérateur" value={loading || !global ? "—" : `${sign(global.profit_boyah)} F`}
           sub="Après reversements & charges"
           icon={TrendingUp} color="bg-gradient-to-br from-emerald-400 to-teal-500"
           textColor={global && global.profit_boyah >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"} />
@@ -727,9 +727,9 @@ export default function ClientsPage() {
       {/* Légende */}
       <div className="flex flex-wrap gap-x-6 gap-y-2 px-4 py-3 rounded-xl bg-indigo-50 dark:bg-indigo-500/5 border border-indigo-100 dark:border-indigo-500/20">
         <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-          <span className="font-bold">Formule :</span> Bénéfice Boyah = Revenu − Net client − Charge Boyah
+          <span className="font-bold">Formule :</span> Bénéfice opérateur = Revenu − Net client − Charge opérateur
         </p>
-        <p className="text-xs text-indigo-600 dark:text-indigo-400">· Charge Boyah = min(dépenses, 50 000 F)</p>
+        <p className="text-xs text-indigo-600 dark:text-indigo-400">· Charge opérateur = min(dépenses, 50 000 F)</p>
         <p className="text-xs text-indigo-600 dark:text-indigo-400">· Net client = Montant mensuel − max(0, dépenses − 50 000 F)</p>
       </div>
 

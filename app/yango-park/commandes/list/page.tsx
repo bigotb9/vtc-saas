@@ -217,7 +217,7 @@ export default function CommandesPage() {
         <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-500/5 dark:to-purple-500/10 rounded-2xl border border-violet-100 dark:border-violet-500/20 px-6 py-4">
           <div className="flex items-center gap-2 mb-3">
             <Percent size={14} className="text-violet-500" />
-            <span className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Commissions Boyah (2,5%)</span>
+            <span className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider">Commissions opérateur (2,5%)</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {[

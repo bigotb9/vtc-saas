@@ -116,7 +116,7 @@ export default function GpsCartePage() {
               <p className="text-[10px] text-gray-500 leading-tight hidden sm:block">
                 {error ? "Connexion impossible"
                   : loading_ ? "Connexion à gps-go.com…"
-                  : "Boyah Group · temps réel"}
+                  : "Flotte · temps réel"}
               </p>
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function GpsCartePage() {
             ref={iframeRef}
             src={GPS_URL}
             className={`w-full h-full border-0 transition-opacity duration-700 ${loading_ || error ? "opacity-0 pointer-events-none" : "opacity-100"}`}
-            title="GPS Live — Boyah Group"
+            title="GPS Live"
             allow="geolocation; fullscreen"
             onLoad={onLoad}
             onError={() => { setLoading(false); setError(true) }}

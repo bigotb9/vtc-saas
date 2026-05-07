@@ -34,11 +34,11 @@ const ALL_ACTIONS: { key: string; label: string; category: string }[] = [
   { key: "edit_vehicle",         label: "Modifier un véhicule",               category: "Flotte" },
   { key: "delete_vehicle",       label: "Supprimer un véhicule",              category: "Flotte" },
   { key: "manage_clients",       label: "Gérer les clients",                  category: "Flotte" },
-  // Boyah Transport
-  { key: "view_boyah_dashboard", label: "Voir le dashboard Boyah Transport",  category: "Boyah Transport" },
-  { key: "view_orders",          label: "Voir les commandes Yango",           category: "Boyah Transport" },
-  { key: "sync_orders",          label: "Synchroniser les commandes",         category: "Boyah Transport" },
-  { key: "create_driver",        label: "Créer un prestataire Yango",         category: "Boyah Transport" },
+  // Partenariat Yango
+  { key: "view_boyah_dashboard", label: "Voir le dashboard Partenariat Yango", category: "Partenariat Yango" },
+  { key: "view_orders",          label: "Voir les commandes Yango",            category: "Partenariat Yango" },
+  { key: "sync_orders",          label: "Synchroniser les commandes",          category: "Partenariat Yango" },
+  { key: "create_driver",        label: "Créer un prestataire Yango",          category: "Partenariat Yango" },
   // Système
   { key: "view_ai_insights",     label: "Accéder aux AI Insights",            category: "Système" },
   { key: "generate_ai_insights", label: "Déclencher une analyse IA",          category: "Système" },
@@ -196,7 +196,7 @@ export default function SettingsPage() {
 
   // Préférences (localStorage)
   const [alertThreshold, setAlertThreshold] = useState(14)
-  const [companyName,    setCompanyName]    = useState("Boyah Group")
+  const [companyName,    setCompanyName]    = useState("")
   const [prefSaved,      setPrefSaved]      = useState(false)
 
   // Directeur
@@ -227,7 +227,7 @@ export default function SettingsPage() {
     })
     // Charger préférences
     const t = parseInt(localStorage.getItem("app_alert_threshold") || "14")
-    const c = localStorage.getItem("app_company_name") || "Boyah Group"
+    const c = localStorage.getItem("app_company_name") || ""
     setAlertThreshold(t)
     setCompanyName(c)
   }, [])
@@ -520,7 +520,7 @@ export default function SettingsPage() {
             <SectionHeader icon={Building2} label="Entreprise (pour les exports PDF)" gradient="from-indigo-500 to-violet-600" />
             <div className="space-y-2 max-w-sm">
               <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nom de l&apos;entreprise</label>
-              <input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Boyah Group" className={inp} />
+              <input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder="Mon entreprise" className={inp} />
             </div>
             <button onClick={savePreferences}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition">

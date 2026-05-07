@@ -269,7 +269,7 @@ export default function CreateVehicule() {
             <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
               <div>
                 <p className="text-sm font-semibold text-gray-800 dark:text-white">Véhicule sous gestion</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Le propriétaire est un client externe — Boyah reverse un montant mensuel</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Le propriétaire est un client externe — l&apos;opérateur reverse un montant mensuel</p>
               </div>
               <button type="button"
                 onClick={() => set("sous_gestion", !form.sous_gestion)}

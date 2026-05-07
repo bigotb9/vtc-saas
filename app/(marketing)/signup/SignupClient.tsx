@@ -228,7 +228,7 @@ export default function SignupClient({ plans, defaultPlan, defaultCycle }: Props
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 className="input"
-                placeholder="VTC Boyah Group"
+                placeholder="Ex: VTC Acme Transport"
               />
             </Field>
             <Field label="Email administrateur" required>

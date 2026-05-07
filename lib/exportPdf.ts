@@ -132,7 +132,7 @@ export async function generatePdf({
   doc.text(title, textX, 13)
   doc.setFont("helvetica", "normal")
   doc.setFontSize(8)
-  doc.text(subtitle ?? "Boyah Group · VTC Dashboard", textX, 21)
+  doc.text(subtitle ?? "VTC Dashboard", textX, 21)
   doc.text(`Généré le ${today}`, pageW - 14, 21, { align: "right" })
 
   let y = bannerH + 8
@@ -170,7 +170,7 @@ export async function generatePdf({
     doc.setFontSize(7)
     doc.setTextColor(170, 170, 190)
     doc.text(
-      `Boyah Group · Confidentiel · Page ${i}/${pageCount}`,
+      `Confidentiel · Page ${i}/${pageCount}`,
       pageW / 2, doc.internal.pageSize.getHeight() - 6,
       { align: "center" }
     )
@@ -245,7 +245,7 @@ export async function exportInsightsPdf(opts: {
 
     const dateStr = generatedAt ? new Date(generatedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" }) : "—"
     const doc = await generatePdf({
-      title:    "AI Insights — Boyah Group",
+      title:    "AI Insights",
       subtitle: `Analyse du ${dateStr} · Score santé global : ${score}/100`,
       sections,
     })

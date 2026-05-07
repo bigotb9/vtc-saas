@@ -73,7 +73,7 @@ function buildWhatsAppMessage(d: DriverStat): string {
       `Y a-t-il un souci avec le véhicule, l'application ou autre chose ? ` +
       `Notre équipe est disponible pour vous aider à reprendre rapidement et améliorer vos revenus.\n\n` +
       `Pouvez-vous nous rappeler ou nous dire ce qui se passe ?\n\n` +
-      `— L'équipe Boyah Transport`
+      `— L'équipe`
     )
   }
 
@@ -81,10 +81,10 @@ function buildWhatsAppMessage(d: DriverStat): string {
     if (d.totalCourses === 0) {
       return (
         `Bonjour ${prenom},\n\n` +
-        `Vous êtes enregistré sur Boyah Transport via Yango mais nous n'avons pas encore vu votre première course. ` +
+        `Vous êtes enregistré sur notre partenariat Yango mais nous n'avons pas encore vu votre première course. ` +
         `Notre équipe est là pour vous accompagner : prise en main de l'application, conseils sur les zones rentables, etc.\n\n` +
         `Quand pouvez-vous démarrer ? On peut vous appeler dès aujourd'hui.\n\n` +
-        `— L'équipe Boyah Transport`
+        `— L'équipe`
       )
     }
     return (
@@ -95,7 +95,7 @@ function buildWhatsAppMessage(d: DriverStat): string {
       `vos accès Yango sont toujours actifs.\n\n` +
       `Que s'est-il passé ? Si vous rencontrez un blocage (véhicule, paiement, app), nous pouvons vous aider.\n\n` +
       `Répondez-nous, on s'occupe du reste.\n\n` +
-      `— L'équipe Boyah Transport`
+      `— L'équipe`
     )
   }
 
@@ -105,7 +105,7 @@ function buildWhatsAppMessage(d: DriverStat): string {
     `Bravo pour votre activité ! ${d.coursesWeek} course${d.coursesWeek > 1 ? "s" : ""} cette semaine, ` +
     `${d.coursesMois} ce mois, pour ${fmt(d.totalRevenue)} F de chiffre cumulé. ` +
     `Continuez sur cette lancée.\n\n` +
-    `— L'équipe Boyah Transport`
+    `— L'équipe`
   )
 }
 
@@ -236,7 +236,7 @@ export default function AIInsightsBoyahTransport() {
             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-md">
               <Brain size={16} className="text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Insights · Boyah Transport</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">AI Insights · Partenariat Yango</h1>
           </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Analyse des prestataires & indicateurs de décision
@@ -320,7 +320,7 @@ export default function AIInsightsBoyahTransport() {
             { label: "Courses cette semaine",   value: loading ? "—" : coursesWeekTotal,                              icon: Activity,    color: "text-emerald-500" },
             { label: "Courses ce mois",         value: loading ? "—" : coursesMoisTotal,                              icon: Target,      color: "text-indigo-500"  },
             { label: "CA généré (total)",        value: loading ? "—" : `${fmt(Math.round(revTotal))} F`,              icon: BarChart2,   color: "text-sky-500"     },
-            { label: "Commission Boyah (2,5%)", value: loading ? "—" : `${fmt(Math.round(commTotal))} F`,              icon: Zap,         color: "text-violet-500"  },
+            { label: "Commission opérateur (2,5%)", value: loading ? "—" : `${fmt(Math.round(commTotal))} F`,          icon: Zap,         color: "text-violet-500"  },
             { label: "CA moyen / actif",        value: loading ? "—" : `${fmt(Math.round(avgRevPerDriver))} F`,        icon: ArrowUpRight, color: "text-teal-500"   },
             { label: "Inactifs 30j+",           value: loading ? "—" : inactifs.length,                               icon: Clock,       color: "text-red-400"     },
           ].map(row => (

@@ -176,7 +176,7 @@ export default function BoyahDashboardPage() {
       {/* ── HEADER ── */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Boyah Transport</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Partenariat Yango</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             <span className="font-semibold text-gray-700 dark:text-gray-300">{totals.completed.toLocaleString("fr-FR")} complétées</span>
             <span className="mx-1.5 text-gray-300 dark:text-gray-600">·</span>

@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
+import { getCurrentTenant } from "@/lib/supabaseTenant"
+import { ensureFeature } from "@/lib/featureGuard"
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
+  // Garde feature : génération de posts via Claude = feature ai_agent
+  const blocked = await ensureFeature("ai_agent")
+  if (blocked) return blocked
+
   try {
+    const tenant = await getCurrentTenant()
+    const tenantName = tenant?.nom || "notre flotte"
+
     const { stats, platform = "facebook", tone = "professionnel" } = await req.json() as { stats: unknown; platform: string; tone: string }
 
     const platformGuides: Record<string, string> = {
@@ -16,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     const prompt = `Tu es expert en marketing digital pour une entreprise de transport VTC en Côte d'Ivoire.
 
-Génère un post ${platformGuide} pour Boyah Transport, partenaire Yango en Côte d'Ivoire.
+Génère un post ${platformGuide} pour ${tenantName}, partenaire Yango en Côte d'Ivoire.
 
 Données actuelles (utilise-les naturellement dans le post) :
 ${JSON.stringify(stats, null, 2)}
@@ -25,7 +34,7 @@ Ton : ${tone}
 Langue : Français (adapté au public ivoirien)
 
 Le post doit :
-- Valoriser la performance et la fiabilité de Boyah Transport
+- Valoriser la performance et la fiabilité de ${tenantName}
 - Mentionner naturellement Yango si pertinent
 - Inclure un call-to-action (rejoindre la flotte, ou appel clients)
 - Ne PAS ressembler à de la publicité froide — être authentique et engageant
