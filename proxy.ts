@@ -20,14 +20,12 @@ import { NextRequest, NextResponse } from "next/server"
  *   - `/_next/*`, statiques
  */
 
-const PUBLIC_PREFIXES = ["/saas", "/api/saas", "/api/public", "/api/signup", "/api/payment", "/api/webhooks", "/api/cron", "/dev", "/pay", "/_next", "/favicon", "/icon"]
+const PUBLIC_PREFIXES = ["/saas", "/api/saas", "/api/public", "/api/signup", "/api/payment", "/api/webhooks", "/api/cron", "/dev", "/pay", "/vtc-dashboard", "/_next", "/favicon", "/icon"]
 
 /**
  * Routes accessibles SANS tenant — la landing publique vtcdashboard.com.
- * Sur ces paths on n'exige pas de slug et on rewrite vers /(marketing)/* pour
- * servir l'UI publique au lieu de l'app tenant.
  */
-const MARKETING_PATHS = ["/", "/pricing", "/signup", "/landing"]
+const MARKETING_PATHS = ["/", "/pricing", "/signup", "/landing", "/vtc-dashboard"]
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PREFIXES.some(p => pathname === p || pathname.startsWith(p + "/"))
@@ -113,9 +111,9 @@ export function proxy(req: NextRequest) {
   //
   // Côté UX, /landing est une URL publique acceptable.
   const isHostApp = isAppHost(hostname)
-  if (pathname === "/" && !qSlug && (isHostApp || !slug)) {
+  if ((pathname === "/" || pathname === "/landing") && !qSlug && (isHostApp || !slug)) {
     const url = req.nextUrl.clone()
-    url.pathname = "/landing"
+    url.pathname = "/vtc-dashboard"
     return NextResponse.redirect(url, 307)
   }
 

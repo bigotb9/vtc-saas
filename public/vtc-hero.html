@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VTC Dashboard — Hero</title>
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#050E1A;font-family:'Space Grotesk',sans-serif}
+  canvas{position:fixed;inset:0;z-index:0}
+
+  /* ── HERO LEFT ─────────────────────────────── */
+  .hero-left{
+    position:fixed;left:clamp(5%,8vw,10%);top:50%;transform:translateY(-50%);
+    z-index:20;max-width:520px;pointer-events:auto;
+  }
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(255,69,0,.12);border:1px solid rgba(255,69,0,.35);
+    color:#FF8C55;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    padding:5px 14px;border-radius:999px;margin-bottom:22px;
+  }
+  .eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:#FF4500;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.4)}}
+  .hero-left h1{
+    font-family:'Syne',sans-serif;font-size:clamp(2rem,4.2vw,3.4rem);
+    font-weight:800;line-height:1.1;color:#fff;margin-bottom:20px;
+  }
+  .hero-left h1 em{
+    font-style:normal;
+    background:linear-gradient(135deg,#FF4500 0%,#FF8C00 50%,#FFD700 100%);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  }
+  .hero-left p{
+    font-size:clamp(0.9rem,1.4vw,1.1rem);color:rgba(255,255,255,.68);
+    line-height:1.7;margin-bottom:32px;max-width:430px;
+  }
+  .ctas{display:flex;gap:14px;flex-wrap:wrap}
+  .btn-primary{
+    display:inline-flex;align-items:center;gap:8px;
+    background:linear-gradient(135deg,#FF4500,#FF6A00);
+    color:#fff;font-weight:700;font-size:.95rem;letter-spacing:.02em;
+    padding:14px 28px;border-radius:999px;text-decoration:none;
+    box-shadow:0 0 28px rgba(255,69,0,.45);
+    transition:transform .2s,box-shadow .2s;
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 4px 36px rgba(255,69,0,.6)}
+  .btn-ghost{
+    display:inline-flex;align-items:center;gap:8px;
+    background:rgba(255,255,255,.06);backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.15);color:#fff;
+    font-weight:600;font-size:.95rem;padding:14px 28px;border-radius:999px;text-decoration:none;
+    transition:background .2s,border-color .2s;
+  }
+  .btn-ghost:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.3)}
+
+  /* ── KPI PANEL ─────────────────────────────── */
+  .panel-wrap{
+    position:fixed;right:clamp(3%,5vw,7%);top:50%;transform:translateY(-50%);
+    z-index:20;pointer-events:none;
+  }
+  .panel{
+    background:rgba(5,14,26,.55);backdrop-filter:blur(28px) saturate(1.5);
+    border:1px solid rgba(255,255,255,.1);border-radius:20px;
+    padding:24px 28px;min-width:220px;
+    box-shadow:0 8px 48px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .panel-title{
+    font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:rgba(255,255,255,.45);margin-bottom:18px;display:flex;align-items:center;gap:7px;
+  }
+  .panel-title::before{content:'';width:8px;height:8px;border-radius:50%;background:#22c55e;animation:blink 2.4s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  .kpi{margin-bottom:16px}
+  .kpi:last-child{margin-bottom:0}
+  .kpi-label{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:.06em;margin-bottom:3px}
+  .kpi-value{font-size:1.6rem;font-weight:800;font-family:'Syne',sans-serif;color:#fff;line-height:1}
+  .kpi-sub{font-size:10px;color:rgba(255,255,255,.35);margin-top:2px}
+  .kpi-value.orange{color:#FF6A00}
+  .kpi-value.green{color:#22c55e}
+  .kpi-value.teal{color:#00D4FF}
+  .divider{height:1px;background:rgba(255,255,255,.07);margin:14px 0}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- HERO LEFT -->
+<div class="hero-left">
+  <div class="eyebrow">Fait pour la Côte d'Ivoire · Wave · Yango</div>
+  <h1>Pilotez votre flotte VTC<br/><em>avec une précision absolue</em></h1>
+  <p>Recettes Wave en temps réel, classement Yango, alertes chauffeurs, rapports PDF — tout votre business dans un tableau de bord pensé pour Abidjan.</p>
+  <div class="ctas">
+    <a href="/signup" class="btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>
+      Commencer maintenant
+    </a>
+    <a href="/pricing" class="btn-ghost">Voir les tarifs</a>
+  </div>
+</div>
+
+<!-- KPI PANEL -->
+<div class="panel-wrap">
+  <div class="panel">
+    <div class="panel-title">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Tableau de bord live
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Véhicules actifs</div>
+      <div class="kpi-value orange" id="k-veh">17</div>
+    </div>
+    <div class="divider"></div>
+    <div class="kpi">
+      <div class="kpi-label">Chauffeurs</div>
+      <div class="kpi-value" id="k-drv">38</div>
+    </div>
+    <div class="divider"></div>
+    <div class="kpi">
+      <div class="kpi-label">CA ce mois</div>
+      <div class="kpi-value green" id="k-ca">2,4M</div>
+      <div class="kpi-sub">FCFA</div>
+    </div>
+    <div class="divider"></div>
+    <div class="kpi">
+      <div class="kpi-label">Commission Yango</div>
+      <div class="kpi-value teal">2,5%</div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js"}}
+</script>
+<script type="module">
+import * as THREE from 'three'
+
+const W = window.innerWidth, H = window.innerHeight
+const canvas = document.getElementById('c')
+const renderer = new THREE.WebGLRenderer({canvas,antialias:true,alpha:false})
+renderer.setPixelRatio(Math.min(devicePixelRatio,2))
+renderer.setSize(W,H)
+renderer.shadowMap.enabled = true
+renderer.toneMapping = THREE.ACESFilmicToneMapping
+renderer.toneMappingExposure = 1.1
+
+const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x030810)
+scene.fog = new THREE.FogExp2(0x030810, 0.022)
+
+const camera = new THREE.PerspectiveCamera(62,W/H,.3,200)
+camera.position.set(0,2.8,-1)
+camera.lookAt(0,1.2,20)
+
+// ── AMBIENT + HEMI ──────────────────────────────
+scene.add(new THREE.HemisphereLight(0x112244,.05,0.4))
+const ambLight = new THREE.AmbientLight(0x0a1530,0.6)
+scene.add(ambLight)
+
+// ── ROAD ────────────────────────────────────────
+const roadGeo = new THREE.PlaneGeometry(12,200)
+const roadMat = new THREE.MeshStandardMaterial({color:0x0d1117,roughness:.9,metalness:.05})
+const road = new THREE.Mesh(roadGeo,roadMat)
+road.rotation.x = -Math.PI/2
+road.position.z = 80
+scene.add(road)
+
+// Lane markings
+const mkGeo = new THREE.PlaneGeometry(.12,3)
+const mkMat = new THREE.MeshBasicMaterial({color:0xffffff,opacity:.35,transparent:true})
+for(let i=0;i<30;i++){
+  const m = new THREE.Mesh(mkGeo,mkMat)
+  m.rotation.x = -Math.PI/2
+  m.position.set(0,.01,i*6+2)
+  scene.add(m)
+}
+// side lines
+const lGeo = new THREE.PlaneGeometry(.06,200)
+const lMat = new THREE.MeshBasicMaterial({color:0xffff00,opacity:.25,transparent:true})
+;[-5.5,5.5].forEach(x=>{
+  const l = new THREE.Mesh(lGeo,lMat)
+  l.rotation.x=-Math.PI/2;l.position.set(x,.01,80);scene.add(l)
+})
+
+// ── SIDEWALK & CURBS ────────────────────────────
+const swMat = new THREE.MeshStandardMaterial({color:0x1a1f2e,roughness:.8})
+;[-1,-1].forEach((s,i)=>{
+  const sw = new THREE.Mesh(new THREE.BoxGeometry(3,0.12,200),swMat)
+  sw.position.set(i===0?-7.5:7.5,.06,80)
+  scene.add(sw)
+})
+
+// ── BUILDINGS ───────────────────────────────────
+function makeBuilding(x,z,w,h,d,color=0x0d1520){
+  const geo = new THREE.BoxGeometry(w,h,d)
+  const mat = new THREE.MeshStandardMaterial({color,roughness:.85,metalness:.1})
+  const mesh = new THREE.Mesh(geo,mat)
+  mesh.position.set(x,h/2,z)
+  scene.add(mesh)
+
+  // windows
+  const rows=Math.floor(h/1.4), cols=Math.floor(w/1.2)
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      if(Math.random()>.4){
+        const wgeo = new THREE.PlaneGeometry(.45,.55)
+        const wlit = Math.random()>.3
+        const wmat = new THREE.MeshBasicMaterial({
+          color: wlit ? (Math.random()>.7?0xFFCC66:0xAADDFF) : 0x111827,
+          opacity: wlit?(.6+Math.random()*.3):.5, transparent:true
+        })
+        const wm = new THREE.Mesh(wgeo,wmat)
+        const sx = x>0 ? -(d/2+.01) : (d/2+.01)
+        wm.position.set(
+          x + (c-(cols-1)/2)*1.1,
+          .8+r*1.35,
+          z + sx*(x>0?-1:1)
+        )
+        wm.rotation.y = x>0?Math.PI/2:-Math.PI/2
+        scene.add(wm)
+      }
+    }
+  }
+}
+
+const bldgData=[
+  [-10,10,4,14,8], [-14,25,5,20,10], [-9,42,3,10,7],  [-13,55,6,24,11],
+  [-10,70,4,16,8], [-14,85,5,18,10], [-9,100,4,12,7],
+  [10,8,4,12,8],  [14,22,6,22,12],  [9,40,3,9,7],   [13,52,5,20,10],
+  [10,68,4,14,8], [14,82,6,26,12],  [10,96,4,11,7],
+]
+bldgData.forEach(b=>makeBuilding(...b))
+
+// ── STREET LIGHTS ───────────────────────────────
+const poleGeo = new THREE.CylinderGeometry(.06,.06,5,8)
+const poleMat = new THREE.MeshStandardMaterial({color:0x334155})
+for(let i=0;i<15;i++){
+  ;[-6.5,6.5].forEach(sx=>{
+    const pole = new THREE.Mesh(poleGeo,poleMat)
+    pole.position.set(sx,2.5,i*12+4)
+    scene.add(pole)
+    const light = new THREE.PointLight(0xffd280,.8,18)
+    light.position.set(sx*(sx>0?.85:1.15),5.2,i*12+4)
+    scene.add(light)
+    const head = new THREE.Mesh(new THREE.SphereGeometry(.18,8,8),
+      new THREE.MeshBasicMaterial({color:0xffd280}))
+    head.position.copy(light.position)
+    scene.add(head)
+  })
+}
+
+// ── CARS ────────────────────────────────────────
+function makeCar(z,lane,oncoming=false){
+  const g = new THREE.Group()
+
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6,.55,3.2),
+    new THREE.MeshStandardMaterial({color:oncoming?0x1a3a5c:0x1c2030,roughness:.5,metalness:.3})
+  )
+  body.position.y=.48
+  g.add(body)
+
+  const roof = new THREE.Mesh(
+    new THREE.BoxGeometry(1.3,.45,1.8),
+    new THREE.MeshStandardMaterial({color:oncoming?0x142b45:0x151a28,roughness:.6})
+  )
+  roof.position.set(0,.97,.1)
+  g.add(roof)
+
+  // headlights / taillights
+  const lPos = oncoming ? [-.55,.48,1.65] : [-.55,.48,-1.65]
+  const rPos = oncoming ? [.55,.48,1.65]  : [.55,.48,-1.65]
+  const lColor = oncoming ? 0xffffff : 0xff2200
+  ;[lPos,rPos].forEach(p=>{
+    const lm = new THREE.Mesh(new THREE.SphereGeometry(.12,8,8),
+      new THREE.MeshBasicMaterial({color:lColor}))
+    lm.position.set(...p); g.add(lm)
+    const pl = new THREE.PointLight(lColor,oncoming?1.5:.8,8)
+    pl.position.set(...p); g.add(pl)
+  })
+
+  g.position.set(lane,0,z)
+  if(oncoming) g.rotation.y=Math.PI
+  return g
+}
+
+const cars=[]
+const carData=[
+  {z:20,lane:-2,oc:false,spd:.18},
+  {z:35,lane:2,oc:true,spd:.14},
+  {z:55,lane:-2,oc:false,spd:.2},
+  {z:70,lane:2,oc:true,spd:.16},
+  {z:90,lane:-2,oc:false,spd:.19},
+  {z:10,lane:2.5,oc:true,spd:.13},
+]
+carData.forEach(d=>{
+  const c=makeCar(d.z,d.lane,d.oc)
+  c.userData={spd:d.spd,oc:d.oc}
+  scene.add(c); cars.push(c)
+})
+
+// ── RAIN ────────────────────────────────────────
+const DROPS = 4000
+const pos = new Float32Array(DROPS*3)
+const vel = new Float32Array(DROPS)
+for(let i=0;i<DROPS;i++){
+  pos[i*3]   = (Math.random()-0.5)*40
+  pos[i*3+1] = Math.random()*25
+  pos[i*3+2] = Math.random()*120
+  vel[i]     = .08+Math.random()*.14
+}
+const rainGeo = new THREE.BufferGeometry()
+rainGeo.setAttribute('position',new THREE.BufferAttribute(pos,3))
+const rainMat = new THREE.PointsMaterial({
+  color:0x88aacc,size:.06,transparent:true,opacity:.35,sizeAttenuation:true
+})
+const rain = new THREE.Points(rainGeo,rainMat)
+scene.add(rain)
+
+// ── REFLECTIONS ON WET ROAD ─────────────────────
+const reflectGeo = new THREE.PlaneGeometry(12,200)
+const reflectMat = new THREE.MeshStandardMaterial({
+  color:0x0d1117,roughness:.05,metalness:.85,opacity:.6,transparent:true
+})
+const reflect = new THREE.Mesh(reflectGeo,reflectMat)
+reflect.rotation.x=-Math.PI/2
+reflect.position.set(0,.005,80)
+scene.add(reflect)
+
+// ── ANIMATE ─────────────────────────────────────
+let t=0
+function animate(){
+  requestAnimationFrame(animate)
+  t+=.016
+
+  // rain
+  const pa = rainGeo.attributes.position.array
+  for(let i=0;i<DROPS;i++){
+    pa[i*3+1] -= vel[i]
+    if(pa[i*3+1]<-.5){ pa[i*3+1]=25; pa[i*3]=( Math.random()-.5)*40; pa[i*3+2]=Math.random()*120 }
+  }
+  rainGeo.attributes.position.needsUpdate=true
+
+  // cars
+  cars.forEach(c=>{
+    if(c.userData.oc){
+      c.position.z -= c.userData.spd
+      if(c.position.z < -5) c.position.z=110
+    }else{
+      c.position.z -= c.userData.spd
+      if(c.position.z < -5) c.position.z=110
+    }
+  })
+
+  // gentle camera drift
+  camera.position.x = Math.sin(t*.08)*.18
+  camera.lookAt(.0,1.2,20)
+
+  renderer.render(scene,camera)
+}
+animate()
+
+window.addEventListener('resize',()=>{
+  const w=innerWidth,h=innerHeight
+  camera.aspect=w/h; camera.updateProjectionMatrix()
+  renderer.setSize(w,h)
+})
+</script>
+</body>
+</html>
