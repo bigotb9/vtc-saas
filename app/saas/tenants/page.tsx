@@ -10,18 +10,22 @@ type Tenant = {
   slug:                 string
   nom:                  string
   email_admin:          string
-  supabase_project_ref: string
-  supabase_url:         string
-  plan:                 string
+  // Nullables depuis migration 0004 : pour les tenants 'awaiting_payment',
+  // le projet Supabase n'existe pas encore.
+  supabase_project_ref: string | null
+  supabase_url:         string | null
+  plan:                 string | null
   statut:               string
   provisioning_status:  string
   provisioning_error:   string | null
   created_at:           string
+  signup_plan_id:       string | null
 }
 
 const STATUS_BADGE: Record<string, { label: string; cls: string; Icon: typeof CheckCircle2 }> = {
-  ready:     { label: "Prêt",      cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400", Icon: CheckCircle2 },
-  pending:   { label: "En attente", cls: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",        Icon: Clock },
+  ready:            { label: "Prêt",      cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400", Icon: CheckCircle2 },
+  awaiting_payment: { label: "Paiement",   cls: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",         Icon: Clock },
+  pending:          { label: "En attente", cls: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",         Icon: Clock },
   creating:  { label: "Création",   cls: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400",                 Icon: Loader2 },
   migrating: { label: "Migration",  cls: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400",                 Icon: Loader2 },
   seeding:   { label: "Init data",  cls: "bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400",                 Icon: Loader2 },
@@ -84,11 +88,15 @@ export default function TenantsListPage() {
     load()
   }
 
-  // Polling : pour tout tenant non-ready/non-failed, appelle /sync toutes les 6s.
-  // /sync vérifie l'état du projet Supabase et lance la migration si prêt.
+  // Polling : pour tout tenant en cours de provisioning, appelle /sync toutes
+  // les 6s. /sync vérifie l'état du projet Supabase et lance la migration si
+  // prêt. On exclut 'awaiting_payment' (projet pas encore créé) — le tenant
+  // attend que l'admin valide le paiement Wave dans /saas/tenants/[id].
   useEffect(() => {
     if (!tenants) return
-    const inProgress = tenants.filter(t => !["ready", "failed"].includes(t.provisioning_status))
+    const inProgress = tenants.filter(t =>
+      !["ready", "failed", "awaiting_payment"].includes(t.provisioning_status)
+    )
     if (inProgress.length === 0) return
 
     const tick = async () => {
@@ -151,7 +159,7 @@ export default function TenantsListPage() {
                     <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">{t.nom}</td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">{t.slug}</td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{t.email_admin}</td>
-                    <td className="px-4 py-3"><span className="text-[10px] font-mono uppercase bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded">{t.plan}</span></td>
+                    <td className="px-4 py-3"><span className="text-[10px] font-mono uppercase bg-gray-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded">{t.signup_plan_id || t.plan || "—"}</span></td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md ${meta.cls}`}>
                         <Icon size={10} className={animatedIcon ? "animate-spin" : ""} />{meta.label}
@@ -161,11 +169,15 @@ export default function TenantsListPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <a href={`https://supabase.com/dashboard/project/${t.supabase_project_ref}`}
-                         target="_blank" rel="noopener noreferrer"
-                         className="inline-flex items-center gap-1 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:underline">
-                        {t.supabase_project_ref.slice(0,12)}…<ExternalLink size={10} />
-                      </a>
+                      {t.supabase_project_ref ? (
+                        <a href={`https://supabase.com/dashboard/project/${t.supabase_project_ref}`}
+                           target="_blank" rel="noopener noreferrer"
+                           className="inline-flex items-center gap-1 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:underline">
+                          {t.supabase_project_ref.slice(0,12)}…<ExternalLink size={10} />
+                        </a>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-400">{new Date(t.created_at).toLocaleDateString("fr-FR")}</td>
                     <td className="px-4 py-3">
