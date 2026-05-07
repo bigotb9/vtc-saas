@@ -40,13 +40,27 @@ export async function POST(req: NextRequest) {
   const { type, ...rest } = body
 
   if (type === "yango") {
-    const { park_id, client_id, api_key } = rest
-    if (!park_id || !client_id || !api_key) {
-      return NextResponse.json({ error: "park_id, client_id et api_key requis" }, { status: 400 })
+    const { park_id, client_id, api_key_drivers, api_key_cars, api_key_orders } = rest
+    if (!park_id || !client_id) {
+      return NextResponse.json({ error: "park_id et client_id requis" }, { status: 400 })
     }
-    await saveTenantIntegrations(auth.tenant.id, {
-      yango: { park_id, client_id, api_key, configured_at: new Date().toISOString() },
-    })
+    // Charge les clés existantes pour conserver celles non fournies
+    const existing = await getTenantIntegrations(auth.tenant.id)
+    const prev = existing?.yango
+    const merged = {
+      park_id,
+      client_id,
+      api_key_drivers: api_key_drivers || prev?.api_key_drivers || "",
+      api_key_cars:    api_key_cars    || prev?.api_key_cars    || "",
+      api_key_orders:  api_key_orders  || prev?.api_key_orders  || "",
+      configured_at:   new Date().toISOString(),
+    }
+    if (!merged.api_key_drivers || !merged.api_key_cars || !merged.api_key_orders) {
+      return NextResponse.json({
+        error: "Les 3 clés API (prestataires, véhicules, commandes) sont requises à la première configuration",
+      }, { status: 400 })
+    }
+    await saveTenantIntegrations(auth.tenant.id, { yango: merged })
     return NextResponse.json({ ok: true, message: "Intégration Yango sauvegardée" })
   }
 

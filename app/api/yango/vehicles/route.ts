@@ -8,7 +8,7 @@ export async function GET() {
   try {
     const url = process.env.YANGO_CARS_URL
     if (!url) return NextResponse.json({ error: "YANGO_CARS_URL manquante" }, { status: 500 })
-    const { api_key: apiKey, client_id: clid, park_id: parkId } = await getYangoConfig()
+    const { api_key_cars: apiKey, client_id: clid, park_id: parkId } = await getYangoConfig()
 
     const response = await fetch(url, {
       method: "POST",

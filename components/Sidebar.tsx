@@ -280,6 +280,8 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
                     <div className="ml-3 pl-3 border-l border-gray-200 dark:border-[#1A2235] space-y-0.5 py-1">
                       <SubLink href="/yango-park/dashboard"    label="Dashboard" />
                       <SubLink href="/yango-park/ai-insights" label="AI Insights" />
+                      <SubLink href="/yango-park/prestataires/list" label="Prestataires" />
+                      <SubLink href="/yango-park/vehicules/list"    label="Véhicules" />
 
                       <ToggleBtn label="Commandes" icon={Wallet} open={openCom} onToggle={() => setOpenCom(p => !p)} />
                       <AnimatePresence>

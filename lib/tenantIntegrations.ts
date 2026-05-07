@@ -8,10 +8,13 @@ import { encryptJson, decryptJson } from "@/lib/encrypt"
  */
 
 export type YangoCredentials = {
-  park_id:      string       // ID_DU_PARTENAIRE
-  client_id:    string       // X-Client-ID
-  api_key:      string       // X-API-Key (chiffré avant stockage)
-  configured_at: string      // ISO
+  park_id:         string     // Partner ID (ID_DU_PARTENAIRE)
+  client_id:       string     // X-Client-ID
+  // Chaque endpoint Yango a sa propre clé API :
+  api_key_drivers: string     // Clé → endpoint liste des prestataires
+  api_key_cars:    string     // Clé → endpoint liste des véhicules
+  api_key_orders:  string     // Clé → endpoint liste des commandes
+  configured_at:   string
 }
 
 export type WaveCredentials = {
@@ -71,11 +74,13 @@ export async function saveTenantIntegrations(
 export function maskIntegrations(integ: TenantIntegrations): Record<string, unknown> {
   return {
     yango: integ.yango ? {
-      park_id:      integ.yango.park_id,
-      client_id:    integ.yango.client_id,
-      api_key:      integ.yango.api_key ? "••••••" + integ.yango.api_key.slice(-4) : null,
-      configured:   true,
-      configured_at: integ.yango.configured_at,
+      park_id:         integ.yango.park_id,
+      client_id:       integ.yango.client_id,
+      api_key_drivers: integ.yango.api_key_drivers ? "••••••" + integ.yango.api_key_drivers.slice(-4) : null,
+      api_key_cars:    integ.yango.api_key_cars    ? "••••••" + integ.yango.api_key_cars.slice(-4)    : null,
+      api_key_orders:  integ.yango.api_key_orders  ? "••••••" + integ.yango.api_key_orders.slice(-4)  : null,
+      configured:      true,
+      configured_at:   integ.yango.configured_at,
     } : null,
     wave: integ.wave ? {
       mode:            integ.wave.mode,

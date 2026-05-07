@@ -19,8 +19,16 @@ import { authFetch } from "@/lib/authFetch"
  */
 
 type Integrations = {
-  yango: { park_id: string; client_id: string; api_key: string | null; configured: boolean; configured_at?: string } | null
-  wave:  { mode: string; merchant_link?: string | null; api_key?: string | null; webhook_secret?: string | null; configured: boolean; configured_at?: string } | null
+  yango: {
+    park_id:         string
+    client_id:       string
+    api_key_drivers: string | null
+    api_key_cars:    string | null
+    api_key_orders:  string | null
+    configured:      boolean
+    configured_at?:  string
+  } | null
+  wave: { mode: string; merchant_link?: string | null; api_key?: string | null; webhook_secret?: string | null; configured: boolean; configured_at?: string } | null
 }
 
 export default function IntegrationsPage() {
@@ -66,25 +74,33 @@ function YangoForm({ current, onSaved }: {
   current: Integrations["yango"]
   onSaved: () => void
 }) {
-  const [parkId,   setParkId]   = useState(current?.park_id   || "")
-  const [clientId, setClientId] = useState(current?.client_id || "")
-  const [apiKey,   setApiKey]   = useState("")
-  const [showKey,  setShowKey]  = useState(false)
-  const [saving,   setSaving]   = useState(false)
-  const [msg,      setMsg]      = useState<{ ok: boolean; text: string } | null>(null)
+  const [parkId,         setParkId]         = useState(current?.park_id   || "")
+  const [clientId,       setClientId]       = useState(current?.client_id || "")
+  const [keyDrivers,     setKeyDrivers]     = useState("")
+  const [keyCars,        setKeyCars]        = useState("")
+  const [keyOrders,      setKeyOrders]      = useState("")
+  const [showDrivers,    setShowDrivers]    = useState(false)
+  const [showCars,       setShowCars]       = useState(false)
+  const [showOrders,     setShowOrders]     = useState(false)
+  const [saving,         setSaving]         = useState(false)
+  const [msg,            setMsg]            = useState<{ ok: boolean; text: string } | null>(null)
 
   async function save(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true); setMsg(null)
     try {
+      const body: Record<string, string> = { type: "yango", park_id: parkId, client_id: clientId }
+      if (keyDrivers) body.api_key_drivers = keyDrivers
+      if (keyCars)    body.api_key_cars    = keyCars
+      if (keyOrders)  body.api_key_orders  = keyOrders
       const r = await authFetch("/api/account/integrations", {
         method: "POST",
-        body: JSON.stringify({ type: "yango", park_id: parkId, client_id: clientId, api_key: apiKey }),
+        body: JSON.stringify(body),
       })
       const j = await r.json()
       if (!r.ok) throw new Error(j.error)
       setMsg({ ok: true, text: "Intégration Yango sauvegardée !" })
-      setApiKey("")
+      setKeyDrivers(""); setKeyCars(""); setKeyOrders("")
       onSaved()
     } catch (e) {
       setMsg({ ok: false, text: (e as Error).message })
@@ -124,25 +140,31 @@ function YangoForm({ current, onSaved }: {
             placeholder="Ex: ci_xxxxxx" required
             className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
         </Field>
-        <Field label={`Clé API secrète (X-API-Key)${current?.api_key ? " — laisser vide pour conserver l'ancienne" : ""}`} required={!current?.configured}>
-          <div className="relative">
-            <input
-              type={showKey ? "text" : "password"}
-              value={apiKey}
-              onChange={e => setApiKey(e.target.value)}
-              placeholder={current?.api_key ? current.api_key : "Votre clé API Yango Business"}
-              required={!current?.configured}
-              className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 pr-10"
-            />
-            <button type="button" onClick={() => setShowKey(p => !p)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-              {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
-            </button>
-          </div>
-          <p className="text-[11px] text-gray-500 mt-1">
-            Chiffrée AES-256 avant stockage — jamais exposée en clair.
-          </p>
-        </Field>
+        {[
+          { label: "Clé API — Liste des prestataires (drivers)",  key: keyDrivers,  setKey: setKeyDrivers, show: showDrivers, setShow: setShowDrivers, prev: current?.api_key_drivers },
+          { label: "Clé API — Liste des véhicules (cars)",        key: keyCars,     setKey: setKeyCars,    show: showCars,    setShow: setShowCars,    prev: current?.api_key_cars    },
+          { label: "Clé API — Liste des commandes (orders)",      key: keyOrders,   setKey: setKeyOrders,  show: showOrders,  setShow: setShowOrders,  prev: current?.api_key_orders  },
+        ].map(({ label, key, setKey, show, setShow, prev }) => (
+          <Field key={label} label={`${label}${prev ? " — laisser vide pour conserver" : ""}`} required={!current?.configured && !prev}>
+            <div className="relative">
+              <input
+                type={show ? "text" : "password"}
+                value={key}
+                onChange={e => setKey(e.target.value)}
+                placeholder={prev ? prev : "Votre clé API Yango"}
+                required={!current?.configured && !prev}
+                className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 pr-10"
+              />
+              <button type="button" onClick={() => setShow((p: boolean) => !p)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                {show ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
+          </Field>
+        ))}
+        <p className="text-[11px] text-gray-500">
+          Chaque clé est chiffrée AES-256 avant stockage — jamais exposée en clair.
+        </p>
 
         {msg && (
           <div className={`text-xs flex items-center gap-1 ${msg.ok ? "text-emerald-600" : "text-red-500"}`}>

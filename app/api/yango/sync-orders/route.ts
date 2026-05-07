@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   try {
     const supabase  = await getTenantAdmin()
     const ordersUrl = process.env.YANGO_ORDERS_URL
-    const { api_key: apiKey, client_id: clid, park_id: parkId } = await getYangoConfig()
+    const { api_key_orders: apiKey, client_id: clid, park_id: parkId } = await getYangoConfig()
 
     if (!ordersUrl || !apiKey || !clid || !parkId) {
       const missing = [!ordersUrl && "YANGO_ORDERS_URL", !apiKey && "YANGO_ORDERS_API_KEY", !clid && "CLID", !parkId && "ID_DU_PARTENAIRE"].filter(Boolean)
