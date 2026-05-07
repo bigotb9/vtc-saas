@@ -149,7 +149,7 @@ export default function AIInsightsBoyahTransport() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      const res  = await fetch("/api/boyah-transport/driver-stats")
+      const res  = await fetch("/api/yango-park/driver-stats")
       const data = await res.json()
       if (data.ok) { setDrivers(data.stats || []); setLastSync(new Date()) }
     } finally { setLoading(false) }
@@ -162,7 +162,7 @@ export default function AIInsightsBoyahTransport() {
     const actifs  = drivers.filter(d => d.status === "actif").length
     const total   = drivers.length
     const revMois = drivers.reduce((s, d) => s + d.coursesMois * (d.totalRevenue / Math.max(d.totalCourses, 1)), 0)
-    const res = await fetch("/api/boyah-transport/generate-post", {
+    const res = await fetch("/api/yango-park/generate-post", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

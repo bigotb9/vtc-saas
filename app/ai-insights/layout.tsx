@@ -4,10 +4,10 @@ import { loadTenantPlanContext } from "@/lib/plansServer"
 import { hasFeature } from "@/lib/plans"
 import { UpgradePrompt } from "@/components/RequireFeature"
 
-export const metadata: Metadata = { title: "AI Insights — Boyah Group" }
+export const metadata: Metadata = { title: "AI Insights" }
 
 /**
- * Garde feature "ai_insights" pour /ai-insights-boyah-group.
+ * Garde feature "ai_insights" pour /ai-insights.
  * Inclus dans Platinum, addon pour Silver/Gold.
  */
 export default async function Layout({ children }: { children: React.ReactNode }) {

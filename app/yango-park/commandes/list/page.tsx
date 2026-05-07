@@ -50,7 +50,7 @@ export default function CommandesPage() {
   } | null>(null)
 
   const fetchKpis = useCallback(async () => {
-    const r = await fetch("/api/boyah-transport/dashboard-stats")
+    const r = await fetch("/api/yango-park/dashboard-stats")
     const d = await r.json()
     if (d.ok) setKpis({
       completed:      d.totals.completed,

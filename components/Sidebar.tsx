@@ -16,9 +16,8 @@ import { useTenant, useFeature } from "@/components/TenantProvider"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSidebar } from "@/lib/SidebarContext"
 
-// Internal tenant mapping: the sidebar affiche "Partenariat Yango" mais utilise toujours
-// les routes internes /boyah-transport pour préserver la correspondance avec Boyah Group.
-const BOYAH_SERVICE_LABEL = "Partenariat Yango"
+// Routes /yango-park/* — l'espace de gestion de la flotte Yango du tenant.
+const YANGO_SERVICE_LABEL = "Partenariat Yango"
 
 // ── Section label ─────────────────────────────────────────────────────────────
 function SectionLabel({ label, collapsed }: { label: string; collapsed: boolean }) {
@@ -154,7 +153,7 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
 
   type AuthUser = { email?: string; user_metadata?: { name?: string; display_name?: string } }
   const [user, setUser] = useState<AuthUser | null>(null)
-  const [openBoyah, setOpenBoyah] = useState(pathname.startsWith("/boyah-transport"))
+  const [openYango, setOpenYango] = useState(pathname.startsWith("/yango-park"))
   const [openPrest, setOpenPrest] = useState(false)
   const [openVeh,   setOpenVeh]   = useState(false)
   const [openCom,   setOpenCom]   = useState(false)
@@ -170,7 +169,7 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
     router.push("/")
   }
 
-  const isBoyahActive = pathname.startsWith("/boyah-transport")
+  const isYangoActive = pathname.startsWith("/yango-park")
   const userInitial   = (user?.user_metadata?.name || user?.user_metadata?.display_name || user?.email || "U")[0].toUpperCase()
   const userName      = user?.user_metadata?.name || user?.user_metadata?.display_name || "Utilisateur"
 
@@ -252,27 +251,27 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
         {hasYango && <SectionLabel label="Services" collapsed={collapsed} />}
         {hasYango && <div className="space-y-0.5">
           {collapsed ? (
-            <NavLink href="/boyah-transport/dashboard" label={BOYAH_SERVICE_LABEL} icon={Truck} collapsed={collapsed} />
+            <NavLink href="/yango-park/dashboard" label={YANGO_SERVICE_LABEL} icon={Truck} collapsed={collapsed} />
           ) : (
             <>
-              <button onClick={() => setOpenBoyah(p => !p)}
+              <button onClick={() => setOpenYango(p => !p)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all z-10 relative
-                  ${isBoyahActive
+                  ${isYangoActive
                     ? "text-indigo-700 dark:text-indigo-300"
                     : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-gray-200"
                   }`}
-                data-nav-active={isBoyahActive}>
+                data-nav-active={isYangoActive}>
                 <motion.div whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.9 }} transition={{ type: "spring", stiffness: 400, damping: 15 }}>
-                  <Truck size={17} className={isBoyahActive ? "text-indigo-500 dark:text-indigo-400" : "opacity-70"} />
+                  <Truck size={17} className={isYangoActive ? "text-indigo-500 dark:text-indigo-400" : "opacity-70"} />
                 </motion.div>
-                <span className="flex-1 text-left">{BOYAH_SERVICE_LABEL}</span>
-                <motion.span animate={{ rotate: openBoyah ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                <span className="flex-1 text-left">{YANGO_SERVICE_LABEL}</span>
+                <motion.span animate={{ rotate: openYango ? 90 : 0 }} transition={{ duration: 0.2 }}>
                   <ChevronRight size={13} className="opacity-40" />
                 </motion.span>
               </button>
 
               <AnimatePresence>
-                {openBoyah && (
+                {openYango && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
@@ -281,16 +280,16 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
                     className="overflow-hidden"
                   >
                     <div className="ml-3 pl-3 border-l border-gray-200 dark:border-[#1A2235] space-y-0.5 py-1">
-                      <SubLink href="/boyah-transport/dashboard"    label="Dashboard" />
-                      <SubLink href="/boyah-transport/ai-insights" label="AI Insights" />
+                      <SubLink href="/yango-park/dashboard"    label="Dashboard" />
+                      <SubLink href="/yango-park/ai-insights" label="AI Insights" />
 
                       <ToggleBtn label="Prestataires" icon={Building2} open={openPrest} onToggle={() => setOpenPrest(p => !p)} />
                       <AnimatePresence>
                         {openPrest && (
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                             <div className="ml-4 space-y-0.5">
-                              <SubLink href="/boyah-transport/prestataires/create" label="Créer" />
-                              <SubLink href="/boyah-transport/prestataires/list"   label="Liste" />
+                              <SubLink href="/yango-park/prestataires/create" label="Créer" />
+                              <SubLink href="/yango-park/prestataires/list"   label="Liste" />
                             </div>
                           </motion.div>
                         )}
@@ -301,8 +300,8 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
                         {openVeh && (
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                             <div className="ml-4 space-y-0.5">
-                              <SubLink href="/boyah-transport/vehicules/create" label="Créer" />
-                              <SubLink href="/boyah-transport/vehicules/list"   label="Liste" />
+                              <SubLink href="/yango-park/vehicules/create" label="Créer" />
+                              <SubLink href="/yango-park/vehicules/list"   label="Liste" />
                             </div>
                           </motion.div>
                         )}
@@ -313,7 +312,7 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
                         {openCom && (
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
                             <div className="ml-4 space-y-0.5">
-                              <SubLink href="/boyah-transport/commandes/list" label="Liste" />
+                              <SubLink href="/yango-park/commandes/list" label="Liste" />
                             </div>
                           </motion.div>
                         )}
@@ -328,7 +327,7 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
 
         <SectionLabel label="Système" collapsed={collapsed} />
         <div className="space-y-0.5">
-          {hasAiInsights && can("view_ai_insights") && <NavLink href="/ai-insights-boyah-group" label="AI Insights" icon={Brain}    collapsed={collapsed} />}
+          {hasAiInsights && can("view_ai_insights") && <NavLink href="/ai-insights" label="AI Insights" icon={Brain}    collapsed={collapsed} />}
           {isDirecteur            && <NavLink href="/journal-activite"        label="Journal"     icon={Activity} collapsed={collapsed} />}
           <NavLink href="/parametres" label="Paramètres" icon={Settings} collapsed={collapsed} />
         </div>

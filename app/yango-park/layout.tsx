@@ -4,12 +4,12 @@ import { hasFeature } from "@/lib/plans"
 import { UpgradePrompt } from "@/components/RequireFeature"
 
 /**
- * Garde feature "yango" pour toutes les pages /boyah-transport/*.
+ * Garde feature "yango" pour toutes les pages /yango-park/*.
  * Si le tenant n'a pas la feature dans son plan, on affiche un CTA upgrade
  * au lieu de la page (qui appellerait des API yango refusées en 402).
  */
 
-export default async function BoyahTransportLayout({ children }: { children: React.ReactNode }) {
+export default async function YangoParkLayout({ children }: { children: React.ReactNode }) {
   const tenant = await getCurrentTenant()
   // Si pas de tenant résolu, on laisse passer — les sous-pages géreront
   // leur propre erreur. Le cas standard a un tenant via le proxy.

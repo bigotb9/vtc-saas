@@ -118,7 +118,7 @@ export default function CreateDriverPage() {
     const data = await res.json()
     setLoading(false)
 
-    if (data.success) router.push("/boyah-transport/prestataires/list")
+    if (data.success) router.push("/yango-park/prestataires/list")
     else setErrorMsg(data.error || "Erreur inconnue")
   }
 
@@ -130,7 +130,7 @@ export default function CreateDriverPage() {
 
         {/* HEADER */}
         <div className="flex items-start gap-4">
-          <Link href="/boyah-transport/prestataires/list"
+          <Link href="/yango-park/prestataires/list"
             className="mt-1 flex items-center justify-center w-9 h-9 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-500 hover:text-blue-600 hover:border-blue-300 transition shadow-sm">
             <ArrowLeft size={16} />
           </Link>
@@ -256,7 +256,7 @@ export default function CreateDriverPage() {
 
           {/* ACTIONS DESKTOP */}
           <div className="hidden sm:flex items-center justify-between pt-2">
-            <Link href="/boyah-transport/prestataires/list">
+            <Link href="/yango-park/prestataires/list">
               <button type="button" className="px-5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition shadow-sm">
                 Annuler
               </button>
@@ -275,7 +275,7 @@ export default function CreateDriverPage() {
 
       {/* STICKY MOBILE */}
       <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 px-4 py-3 flex gap-3 shadow-2xl">
-        <Link href="/boyah-transport/prestataires/list" className="flex-1">
+        <Link href="/yango-park/prestataires/list" className="flex-1">
           <button type="button" className="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium">
             Annuler
           </button>

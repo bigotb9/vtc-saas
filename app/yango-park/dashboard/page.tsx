@@ -103,7 +103,7 @@ export default function BoyahDashboardPage() {
   const loadStats = useCallback(async () => {
     setLoading(true)
     try {
-      const r = await fetch("/api/boyah-transport/dashboard-stats")
+      const r = await fetch("/api/yango-park/dashboard-stats")
       const d = await r.json()
       if (d.ok) setStats(d)
     } finally {
