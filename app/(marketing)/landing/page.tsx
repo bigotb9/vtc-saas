@@ -30,156 +30,52 @@ export default function LandingPage() {
 }
 
 
-// ────────── Hero ── scène Three.js Abidjan night ──────────
+// ────────── Hero ──────────
 
 function Hero() {
   return (
-    <section
-      style={{
-        position: "relative",
-        width: "100%",
-        height: "100vh",
-        overflow: "hidden",
-        background: "#030810",
-      }}
-    >
-      {/* Scène Three.js (three.min.js classique, pas d'importmap) */}
-      <iframe
-        src="/vtc-hero-embed.html"
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          border: "none",
-          pointerEvents: "none",
-        }}
-        aria-hidden
-        title="Scène 3D"
-      />
-
-      {/* Gradient gauche — lisibilité texte */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background:
-            "linear-gradient(90deg,rgba(3,4,20,.9) 0%,rgba(3,4,20,.65) 40%,rgba(3,4,20,.22) 62%,transparent 76%)",
-          zIndex: 5,
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* Texte overlay — gauche, centré verticalement */}
-      <div
-        style={{
-          position: "absolute",
-          left: 0,
-          top: 0,
-          bottom: 0,
-          display: "flex",
-          alignItems: "center",
-          paddingLeft: "clamp(5%,8vw,10%)",
-          maxWidth: "52%",
-          zIndex: 20,
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "1.4rem" }}>
-
-          {/* Badge eyebrow */}
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: "8px",
-            fontSize: "11px", fontWeight: 700, letterSpacing: ".12em",
-            textTransform: "uppercase",
-            background: "rgba(255,69,0,.14)",
-            border: "1px solid rgba(255,69,0,.38)",
-            color: "#FF8C55",
-            padding: "5px 14px", borderRadius: "999px",
-            width: "fit-content",
-          }}>
-            <span style={{
-              width: 6, height: 6, borderRadius: "50%", background: "#FF4500",
-              animation: "pulse 2s infinite",
-            }} />
-            Fait pour la Côte d&apos;Ivoire · Wave · Yango
-          </span>
-
-          {/* H1 */}
-          <h1 style={{
-            fontSize: "clamp(2.1rem,4.6vw,3.7rem)",
-            fontWeight: 800,
-            lineHeight: 1.06,
-            color: "#ffffff",
-            margin: 0,
-          }}>
-            Pilotez votre flotte VTC<br />
-            <span style={{
-              background: "linear-gradient(135deg,#FF4500 0%,#FF8C00 50%,#FFD700 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}>
-              avec une précision absolue
-            </span>
-          </h1>
-
-          {/* Paragraph */}
-          <p style={{
-            fontSize: "clamp(.9rem,1.35vw,1.08rem)",
-            color: "rgba(255,255,255,.7)",
-            lineHeight: 1.7,
-            maxWidth: 420,
-            margin: 0,
-          }}>
-            Recettes Wave en temps réel, classement Yango, alertes chauffeurs,
-            rapports PDF — tout votre business dans un tableau de bord pensé
-            pour Abidjan.
-          </p>
-
-          {/* CTAs */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
-            <Link
-              href="/signup"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                background: "linear-gradient(135deg,#FF4500,#FF6A00)",
-                color: "#fff", fontWeight: 700, fontSize: ".92rem",
-                padding: "13px 26px", borderRadius: "999px", textDecoration: "none",
-                boxShadow: "0 0 28px rgba(255,69,0,.42)",
-              }}
-            >
-              Commencer maintenant
-              <ArrowRight size={16} />
-            </Link>
-            <Link
-              href="/pricing"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                background: "rgba(255,255,255,.08)",
-                backdropFilter: "blur(12px)",
-                border: "1px solid rgba(255,255,255,.18)",
-                color: "#fff", fontWeight: 600, fontSize: ".92rem",
-                padding: "13px 26px", borderRadius: "999px", textDecoration: "none",
-              }}
-            >
-              Voir les tarifs
-            </Link>
-          </div>
-
+    <section className="relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 via-white to-amber-50 dark:from-indigo-950/40 dark:via-[#0A0F1A] dark:to-amber-950/30" />
+      <div className="relative max-w-6xl mx-auto px-6 pt-20 pb-24 text-center">
+        <div className="inline-flex items-center gap-2 rounded-full bg-indigo-100 dark:bg-indigo-500/20 px-4 py-1.5 text-xs font-medium text-indigo-700 dark:text-indigo-300 mb-6">
+          <Sparkles size={14} />
+          Plateforme de gestion de véhicules de transport
         </div>
+
+        <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 leading-[1.1]">
+          Pilotez votre flotte VTC
+          <br />
+          <span className="bg-gradient-to-r from-indigo-600 to-amber-500 bg-clip-text text-transparent">
+            sans plus jamais sortir Excel.
+          </span>
+        </h1>
+
+        <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-10">
+          Recettes Wave automatiques, suivi chauffeurs, alertes documents,
+          partenariat Yango, rapports PDF. Conçu pour la Côte d&apos;Ivoire et
+          l&apos;Afrique de l&apos;Ouest.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Link
+            href="/signup"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 transition shadow-lg shadow-indigo-600/20"
+          >
+            Commencer maintenant
+            <ArrowRight size={18} />
+          </Link>
+          <Link
+            href="/pricing"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-white dark:bg-white/5 hover:bg-gray-50 dark:hover:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white font-medium px-6 py-3 transition"
+          >
+            Voir les tarifs
+          </Link>
+        </div>
+
+        <p className="text-xs text-gray-400 mt-6">
+          Activation immédiate après paiement · Sans engagement
+        </p>
       </div>
-
-      {/* Fade bottom → #fff pour transition vers sections suivantes */}
-      <div
-        style={{
-          position: "absolute", bottom: 0, left: 0, right: 0,
-          height: 120,
-          background: "linear-gradient(to bottom,transparent,#ffffff)",
-          zIndex: 10, pointerEvents: "none",
-        }}
-      />
-
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5;transform:scale(1.3)}}`}</style>
     </section>
   )
 }

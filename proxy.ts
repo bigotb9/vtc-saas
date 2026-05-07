@@ -24,6 +24,8 @@ const PUBLIC_PREFIXES = ["/saas", "/api/saas", "/api/public", "/api/signup", "/a
 
 /**
  * Routes accessibles SANS tenant — la landing publique vtcdashboard.com.
+ * Sur ces paths on n'exige pas de slug et on rewrite vers /(marketing)/* pour
+ * servir l'UI publique au lieu de l'app tenant.
  */
 const MARKETING_PATHS = ["/", "/pricing", "/signup", "/landing"]
 
