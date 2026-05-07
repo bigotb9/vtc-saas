@@ -141,9 +141,9 @@ function YangoForm({ current, onSaved }: {
             className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
         </Field>
         {[
-          { label: "Clé API — Liste des prestataires (drivers)",  key: keyDrivers,  setKey: setKeyDrivers, show: showDrivers, setShow: setShowDrivers, prev: current?.api_key_drivers },
-          { label: "Clé API — Liste des véhicules (cars)",        key: keyCars,     setKey: setKeyCars,    show: showCars,    setShow: setShowCars,    prev: current?.api_key_cars    },
-          { label: "Clé API — Liste des commandes (orders)",      key: keyOrders,   setKey: setKeyOrders,  show: showOrders,  setShow: setShowOrders,  prev: current?.api_key_orders  },
+          { label: "Clé API — Prestataires & règles de travail",  key: keyDrivers,  setKey: setKeyDrivers, show: showDrivers, setShow: setShowDrivers, prev: current?.api_key_drivers },
+          { label: "Clé API — Véhicules",                        key: keyCars,     setKey: setKeyCars,    show: showCars,    setShow: setShowCars,    prev: current?.api_key_cars    },
+          { label: "Clé API — Commandes / courses",              key: keyOrders,   setKey: setKeyOrders,  show: showOrders,  setShow: setShowOrders,  prev: current?.api_key_orders  },
         ].map(({ label, key, setKey, show, setShow, prev }) => (
           <Field key={label} label={`${label}${prev ? " — laisser vide pour conserver" : ""}`} required={!current?.configured && !prev}>
             <div className="relative">

@@ -5,14 +5,18 @@ import { getTenantIntegrations } from "@/lib/tenantIntegrations"
 /**
  * Retourne les credentials Yango du tenant courant.
  *
- * Chaque endpoint Yango a sa propre clé API :
- *   - api_key_drivers : Récupération liste des prestataires
- *   - api_key_cars    : Récupération liste des véhicules
- *   - api_key_orders  : Récupération liste des commandes/courses
+ * Les URLs API Yango sont FIXES pour tous les partenaires (env vars globales
+ * Vercel : YANGO_DRIVERS_URL, YANGO_CARS_URL, YANGO_ORDERS_URL, YANGO_WORK_RULES_URL).
+ * Seuls les 5 credentials ci-dessous sont uniques par partenaire :
  *
- * Priorité :
- *   1. Credentials dans tenant.integrations.yango (configurés par le client)
- *   2. Variables d'env globales (fallback / tenant historique Boyah)
+ *   - park_id         : Partner ID
+ *   - client_id       : X-Client-ID
+ *   - api_key_drivers : Clé → /driver-profiles/list ET /work-rules
+ *   - api_key_cars    : Clé → /cars/list
+ *   - api_key_orders  : Clé → /orders/list
+ *
+ * Le client les saisit dans Mon Compte → Intégrations → Partenariat Yango.
+ * Fallback : env vars globales (tenant principal historique).
  */
 export type YangoConfig = {
   park_id:         string
