@@ -181,10 +181,14 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       service,
       { auth: { persistSession: false } },
     )
+    // Le magic link redirige vers /welcome sur l'app — page qui force la
+    // création du mot de passe avant l'accès au dashboard.
+    const inviteRedirect = `${process.env.SITE_BASE_URL || "https://vtcdashboard.com"}/welcome?t=${tenant.slug}`
     const { data: inv, error: invErr } = await tenantClient.auth.admin.inviteUserByEmail(
       tenant.email_admin,
       {
         data: { invited_as: "tenant_admin", tenant_slug: tenant.slug },
+        redirectTo: inviteRedirect,
       },
     )
     if (invErr || !inv?.user) {

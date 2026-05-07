@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getTenantAdmin } from "@/lib/supabaseTenant"
 import { ensureFeature } from "@/lib/featureGuard"
+import { getYangoConfig } from "@/lib/yangoClient"
 
 export const maxDuration = 60
 
@@ -67,9 +68,7 @@ export async function POST(req: NextRequest) {
   try {
     const supabase  = await getTenantAdmin()
     const ordersUrl = process.env.YANGO_ORDERS_URL
-    const apiKey    = process.env.YANGO_ORDERS_API_KEY
-    const clid      = process.env.CLID
-    const parkId    = process.env.ID_DU_PARTENAIRE
+    const { api_key: apiKey, client_id: clid, park_id: parkId } = await getYangoConfig()
 
     if (!ordersUrl || !apiKey || !clid || !parkId) {
       const missing = [!ordersUrl && "YANGO_ORDERS_URL", !apiKey && "YANGO_ORDERS_API_KEY", !clid && "CLID", !parkId && "ID_DU_PARTENAIRE"].filter(Boolean)

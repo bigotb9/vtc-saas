@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server"
 import { ensureFeature } from "@/lib/featureGuard"
+import { getYangoConfig } from "@/lib/yangoClient"
 
 export async function GET() {
   const blocked = await ensureFeature("yango")
   if (blocked) return blocked
   try {
-    const url    = process.env.YANGO_DRIVERS_URL
-    const apiKey = process.env.YANGO_DRIVERS_API_KEY
-    const clid   = process.env.CLID
-    const parkId = process.env.ID_DU_PARTENAIRE
-
-    if (!url || !apiKey || !clid || !parkId) {
-      const missing = [!url && "YANGO_DRIVERS_URL", !apiKey && "YANGO_DRIVERS_API_KEY", !clid && "CLID", !parkId && "ID_DU_PARTENAIRE"].filter(Boolean)
-      return NextResponse.json({ error: `Variables d'environnement manquantes: ${missing.join(", ")}` }, { status: 500 })
-    }
+    const url = process.env.YANGO_DRIVERS_URL
+    if (!url) return NextResponse.json({ error: "YANGO_DRIVERS_URL manquante" }, { status: 500 })
+    const { api_key: apiKey, client_id: clid, park_id: parkId } = await getYangoConfig()
 
     const response = await fetch(url, {
       method: "POST",

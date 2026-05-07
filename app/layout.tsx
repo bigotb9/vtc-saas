@@ -117,9 +117,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const isDevRoute = pathname.startsWith("/dev/")
   // Routes /pay/* (paiement public d'une facture renewal via lien email).
   const isPayRoute = pathname.startsWith("/pay/")
-  // La page de login tenant ("/") doit être plein écran, sans Sidebar ni
-  // AppShell — sinon flash gris au chargement (cf. capture du 2026-05-06).
-  const isLoginRoute = pathname === "/"
+  // La page de login tenant ("/") et la page welcome doivent être plein écran,
+  // sans Sidebar ni AppShell.
+  const isLoginRoute = pathname === "/" || pathname === "/welcome" || pathname.startsWith("/welcome")
   const skipShells = isSaasRoute || isMarketingRoute || isDevRoute || isPayRoute
 
   let content: React.ReactNode

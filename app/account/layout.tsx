@@ -2,15 +2,16 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Receipt, ShieldCheck, Sparkles, User, Users, Layers } from "lucide-react"
+import { Link2, Receipt, ShieldCheck, Sparkles, User, Users, Layers } from "lucide-react"
 
 const TABS = [
-  { href: "/account",          label: "Aperçu",          icon: User },
-  { href: "/account/billing",  label: "Facturation",     icon: Receipt },
-  { href: "/account/plan",     label: "Plan",            icon: Layers },
-  { href: "/account/team",     label: "Équipe",          icon: Users },
-  { href: "/account/addons",   label: "Options",         icon: Sparkles },
-  { href: "/account/security", label: "Sécurité",        icon: ShieldCheck },
+  { href: "/account",              label: "Aperçu",        icon: User },
+  { href: "/account/billing",      label: "Facturation",   icon: Receipt },
+  { href: "/account/plan",         label: "Plan",          icon: Layers },
+  { href: "/account/team",         label: "Équipe",        icon: Users },
+  { href: "/account/addons",       label: "Options",       icon: Sparkles },
+  { href: "/account/integrations", label: "Intégrations",  icon: Link2 },
+  { href: "/account/security",     label: "Sécurité",      icon: ShieldCheck },
 ]
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {

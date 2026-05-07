@@ -7,8 +7,8 @@ import { useTenant } from "@/components/TenantProvider"
 import Image from "next/image"
 
 // Routes accessibles sans authentification mais dans le contexte tenant
-// (forgot-password, reset-password). On laisse passer sans redirect.
-const PUBLIC_TENANT_PATHS = ["/forgot-password", "/reset-password"]
+// (forgot-password, reset-password, welcome). On laisse passer sans redirect.
+const PUBLIC_TENANT_PATHS = ["/forgot-password", "/reset-password", "/welcome"]
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
 

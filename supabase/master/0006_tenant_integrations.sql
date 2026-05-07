@@ -1,0 +1,32 @@
+-- ============================================================
+-- Master DB — Migration 0006 : Credentials d'intégrations par tenant
+-- ============================================================
+--
+-- Chaque tenant peut avoir ses propres credentials pour :
+--   - Yango Business API (park_id, client_id, api_key)
+--   - Wave Business API (api_key, webhook_secret)
+--
+-- Les valeurs sensibles (api_key, secret) sont chiffrées côté
+-- application (AES-256-GCM) via lib/encrypt.ts avant stockage.
+-- La colonne stocke du JSON chiffré opaque.
+--
+-- Structure de integrations_enc (après déchiffrement) :
+--   {
+--     yango?: {
+--       park_id:     string,   -- ID_DU_PARTENAIRE / park_id
+--       client_id:   string,   -- X-Client-ID
+--       api_key_enc: string,   -- X-API-Key (chiffré AES)
+--       configured_at: string
+--     },
+--     wave?: {
+--       merchant_link: string, -- Lien marchand Wave (https://pay.wave.com/m/...)
+--       api_key_enc:   string, -- WAVE_API_KEY (chiffré)
+--       webhook_secret_enc: string, -- WAVE_WEBHOOK_SECRET (chiffré)
+--       mode:          string, -- 'merchant' | 'api'
+--       configured_at: string
+--     }
+--   }
+-- ============================================================
+
+ALTER TABLE public.tenants
+  ADD COLUMN IF NOT EXISTS integrations_enc TEXT;   -- JSON chiffré AES-256-GCM
