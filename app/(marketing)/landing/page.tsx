@@ -1,7 +1,4 @@
-"use client"
-
 import Link from "next/link"
-import { motion } from "framer-motion"
 import {
   ArrowRight,
   Car,
@@ -14,14 +11,6 @@ import {
   FileText,
   CheckCircle2,
 } from "lucide-react"
-
-const fadeUp = {
-  hidden:  { opacity: 0, y: 28 },
-  visible: (i = 0) => ({
-    opacity: 1, y: 0,
-    transition: { delay: i * 0.12, duration: 0.6, ease: "easeOut" as const },
-  }),
-}
 
 /**
  * Landing publique vtcdashboard.com.
@@ -45,124 +34,152 @@ export default function LandingPage() {
 
 function Hero() {
   return (
-    <section className="relative w-full overflow-hidden" style={{ height: "100dvh" }}>
-
-      {/* Scène 3D en iframe — plein fond, pas d'interaction */}
+    <section
+      style={{
+        position: "relative",
+        width: "100%",
+        height: "100vh",
+        overflow: "hidden",
+        background: "#030810",
+      }}
+    >
+      {/* Scène Three.js (three.min.js classique, pas d'importmap) */}
       <iframe
         src="/vtc-hero-embed.html"
-        className="absolute inset-0 w-full h-full border-0"
-        style={{ pointerEvents: "none" }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          border: "none",
+          pointerEvents: "none",
+        }}
         aria-hidden
-        title="Scène 3D VTC Dashboard"
+        title="Scène 3D"
       />
 
-      {/* Gradient gauche pour lisibilité du texte */}
+      {/* Gradient gauche — lisibilité texte */}
       <div
-        className="absolute inset-0 pointer-events-none"
         style={{
+          position: "absolute",
+          inset: 0,
           background:
-            "linear-gradient(90deg, rgba(3,4,20,0.88) 0%, rgba(3,4,20,0.62) 42%, rgba(3,4,20,0.20) 65%, transparent 78%)",
+            "linear-gradient(90deg,rgba(3,4,20,.9) 0%,rgba(3,4,20,.65) 40%,rgba(3,4,20,.22) 62%,transparent 76%)",
           zIndex: 5,
+          pointerEvents: "none",
         }}
       />
 
       {/* Texte overlay — gauche, centré verticalement */}
       <div
-        className="absolute left-0 top-0 bottom-0 flex items-center z-20"
-        style={{ paddingLeft: "clamp(5%, 8vw, 10%)", maxWidth: "52%" }}
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          display: "flex",
+          alignItems: "center",
+          paddingLeft: "clamp(5%,8vw,10%)",
+          maxWidth: "52%",
+          zIndex: 20,
+        }}
       >
-        <div className="space-y-6">
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.4rem" }}>
 
-          <motion.div
-            variants={fadeUp} initial="hidden" animate="visible" custom={0}
-          >
-            <span
-              className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest px-4 py-2 rounded-full"
-              style={{
-                background: "rgba(255,69,0,.14)",
-                border: "1px solid rgba(255,69,0,.38)",
-                color: "#FF8C55",
-              }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#FF4500] animate-pulse" />
-              Fait pour la Côte d&apos;Ivoire · Wave · Yango
-            </span>
-          </motion.div>
+          {/* Badge eyebrow */}
+          <span style={{
+            display: "inline-flex", alignItems: "center", gap: "8px",
+            fontSize: "11px", fontWeight: 700, letterSpacing: ".12em",
+            textTransform: "uppercase",
+            background: "rgba(255,69,0,.14)",
+            border: "1px solid rgba(255,69,0,.38)",
+            color: "#FF8C55",
+            padding: "5px 14px", borderRadius: "999px",
+            width: "fit-content",
+          }}>
+            <span style={{
+              width: 6, height: 6, borderRadius: "50%", background: "#FF4500",
+              animation: "pulse 2s infinite",
+            }} />
+            Fait pour la Côte d&apos;Ivoire · Wave · Yango
+          </span>
 
-          <motion.h1
-            variants={fadeUp} initial="hidden" animate="visible" custom={1}
-            className="font-extrabold leading-[1.05] text-white"
-            style={{
-              fontFamily: "'Syne', sans-serif",
-              fontSize: "clamp(2.2rem, 4.8vw, 3.8rem)",
-            }}
-          >
+          {/* H1 */}
+          <h1 style={{
+            fontSize: "clamp(2.1rem,4.6vw,3.7rem)",
+            fontWeight: 800,
+            lineHeight: 1.06,
+            color: "#ffffff",
+            margin: 0,
+          }}>
             Pilotez votre flotte VTC<br />
-            <span
-              style={{
-                background: "linear-gradient(135deg,#FF4500 0%,#FF8C00 50%,#FFD700 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
+            <span style={{
+              background: "linear-gradient(135deg,#FF4500 0%,#FF8C00 50%,#FFD700 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}>
               avec une précision absolue
             </span>
-          </motion.h1>
+          </h1>
 
-          <motion.p
-            variants={fadeUp} initial="hidden" animate="visible" custom={2}
-            className="leading-relaxed max-w-[430px]"
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: "clamp(.9rem, 1.4vw, 1.1rem)",
-              color: "rgba(255,255,255,0.72)",
-            }}
-          >
+          {/* Paragraph */}
+          <p style={{
+            fontSize: "clamp(.9rem,1.35vw,1.08rem)",
+            color: "rgba(255,255,255,.7)",
+            lineHeight: 1.7,
+            maxWidth: 420,
+            margin: 0,
+          }}>
             Recettes Wave en temps réel, classement Yango, alertes chauffeurs,
             rapports PDF — tout votre business dans un tableau de bord pensé
             pour Abidjan.
-          </motion.p>
+          </p>
 
-          <motion.div
-            variants={fadeUp} initial="hidden" animate="visible" custom={3}
-            className="flex flex-wrap gap-3"
-          >
+          {/* CTAs */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
             <Link
               href="/signup"
-              className="inline-flex items-center gap-2 rounded-full text-white font-bold text-sm px-6 py-3.5 transition"
               style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
                 background: "linear-gradient(135deg,#FF4500,#FF6A00)",
-                boxShadow: "0 0 28px rgba(255,69,0,.45)",
+                color: "#fff", fontWeight: 700, fontSize: ".92rem",
+                padding: "13px 26px", borderRadius: "999px", textDecoration: "none",
+                boxShadow: "0 0 28px rgba(255,69,0,.42)",
               }}
             >
-              Commencer maintenant <ArrowRight size={16} />
+              Commencer maintenant
+              <ArrowRight size={16} />
             </Link>
             <Link
               href="/pricing"
-              className="inline-flex items-center gap-2 rounded-full font-semibold text-sm px-6 py-3.5 text-white transition"
               style={{
-                background: "rgba(255,255,255,.07)",
+                display: "inline-flex", alignItems: "center", gap: 8,
+                background: "rgba(255,255,255,.08)",
                 backdropFilter: "blur(12px)",
-                border: "1px solid rgba(255,255,255,.16)",
+                border: "1px solid rgba(255,255,255,.18)",
+                color: "#fff", fontWeight: 600, fontSize: ".92rem",
+                padding: "13px 26px", borderRadius: "999px", textDecoration: "none",
               }}
             >
               Voir les tarifs
             </Link>
-          </motion.div>
+          </div>
 
         </div>
       </div>
 
-      {/* Fade bottom → blanc pour transition vers TrustBar */}
+      {/* Fade bottom → #fff pour transition vers sections suivantes */}
       <div
-        className="absolute bottom-0 left-0 right-0 pointer-events-none"
         style={{
+          position: "absolute", bottom: 0, left: 0, right: 0,
           height: 120,
-          background: "linear-gradient(to bottom, transparent, #ffffff)",
-          zIndex: 10,
+          background: "linear-gradient(to bottom,transparent,#ffffff)",
+          zIndex: 10, pointerEvents: "none",
         }}
       />
+
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5;transform:scale(1.3)}}`}</style>
     </section>
   )
 }

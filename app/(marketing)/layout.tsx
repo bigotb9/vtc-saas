@@ -23,7 +23,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
 
 function MarketingHeader() {
   return (
-    <header className="sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-[#0A0F1A]/80 border-b border-gray-200/60 dark:border-white/5">
+    <header className="absolute top-0 left-0 right-0 z-30 backdrop-blur-md bg-white/60 dark:bg-transparent border-b border-white/5">
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 text-white">
