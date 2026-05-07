@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getTenantAdmin } from "@/lib/supabaseTenant"
+import { getTenantAdmin, getCurrentTenant } from "@/lib/supabaseTenant"
+import { loadTenantPlanContext } from "@/lib/plansServer"
+import { checkQuota } from "@/lib/plans"
 
 async function requireDirecteur(req: NextRequest) {
   const supabaseAdmin = await getTenantAdmin()
@@ -49,6 +51,23 @@ export async function POST(req: NextRequest) {
   const { email, password, full_name, role } = await req.json()
   if (!email || !password || !role) return NextResponse.json({ error: "Champs manquants" }, { status: 400 })
   if (!["admin", "dispatcher"].includes(role)) return NextResponse.json({ error: "Rôle invalide" }, { status: 400 })
+
+  // Quota users : refuse si le plan est dépassé (Silver=3, Gold=8, Platinum=∞).
+  const tenant = await getCurrentTenant()
+  if (tenant) {
+    const { count } = await supabaseAdmin.from("profiles").select("*", { count: "exact", head: true })
+    const ctx = await loadTenantPlanContext(tenant.id)
+    const quota = checkQuota(ctx, "users", count ?? 0)
+    if (!quota.ok && quota.limit !== null) {
+      return NextResponse.json({
+        error: `Quota utilisateurs atteint (${quota.current}/${quota.limit}). Passez à un plan supérieur pour ajouter plus d'utilisateurs.`,
+        code: "QUOTA_EXCEEDED",
+        kind: "users",
+        current: quota.current,
+        limit:   quota.limit,
+      }, { status: 402 })
+    }
+  }
 
   const { data: newUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
     email,
