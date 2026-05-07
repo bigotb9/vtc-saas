@@ -108,11 +108,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   // d'auth requise. Sont accessibles à tous, y compris depuis un tenant.
   const isMarketingRoute =
     pathname === "/landing" ||
-    pathname === "/vtc-dashboard" ||
     pathname === "/pricing" ||
     pathname === "/signup" ||
     pathname.startsWith("/landing/") ||
-    pathname.startsWith("/vtc-dashboard/") ||
     pathname.startsWith("/pricing/") ||
     pathname.startsWith("/signup/")
   // Routes /dev/* sont des outils de développement (simulation paiement).
