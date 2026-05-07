@@ -129,6 +129,18 @@ function Features() {
           </p>
         </div>
 
+        {/* Vidéo démo — lecture automatique en boucle silencieuse */}
+        <div className="rounded-2xl overflow-hidden border border-gray-200 dark:border-white/5 shadow-xl mb-12">
+          <video
+            src="/demo.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full block"
+          />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((f) => (
             <div
