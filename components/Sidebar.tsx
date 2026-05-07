@@ -9,7 +9,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import {
   LayoutDashboard, Car, Users, Wallet, TrendingDown,
   Brain, Settings, Truck, ChevronDown, ChevronRight,
-  LogOut, Building2, UserCheck, Activity, PanelLeftClose, PanelLeftOpen, MapPin
+  LogOut, UserCheck, Activity, PanelLeftClose, PanelLeftOpen, MapPin
 } from "lucide-react"
 import { useProfile } from "@/hooks/useProfile"
 import { useTenant, useFeature } from "@/components/TenantProvider"
@@ -154,8 +154,6 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
   type AuthUser = { email?: string; user_metadata?: { name?: string; display_name?: string } }
   const [user, setUser] = useState<AuthUser | null>(null)
   const [openYango, setOpenYango] = useState(pathname.startsWith("/yango-park"))
-  const [openPrest, setOpenPrest] = useState(false)
-  const [openVeh,   setOpenVeh]   = useState(false)
   const [openCom,   setOpenCom]   = useState(false)
 
   useEffect(() => {
@@ -282,30 +280,6 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
                     <div className="ml-3 pl-3 border-l border-gray-200 dark:border-[#1A2235] space-y-0.5 py-1">
                       <SubLink href="/yango-park/dashboard"    label="Dashboard" />
                       <SubLink href="/yango-park/ai-insights" label="AI Insights" />
-
-                      <ToggleBtn label="Prestataires" icon={Building2} open={openPrest} onToggle={() => setOpenPrest(p => !p)} />
-                      <AnimatePresence>
-                        {openPrest && (
-                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                            <div className="ml-4 space-y-0.5">
-                              <SubLink href="/yango-park/prestataires/create" label="Créer" />
-                              <SubLink href="/yango-park/prestataires/list"   label="Liste" />
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      <ToggleBtn label="Véhicules" icon={Car} open={openVeh} onToggle={() => setOpenVeh(p => !p)} />
-                      <AnimatePresence>
-                        {openVeh && (
-                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-                            <div className="ml-4 space-y-0.5">
-                              <SubLink href="/yango-park/vehicules/create" label="Créer" />
-                              <SubLink href="/yango-park/vehicules/list"   label="Liste" />
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
 
                       <ToggleBtn label="Commandes" icon={Wallet} open={openCom} onToggle={() => setOpenCom(p => !p)} />
                       <AnimatePresence>

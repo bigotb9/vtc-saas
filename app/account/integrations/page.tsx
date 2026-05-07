@@ -102,27 +102,35 @@ function YangoForm({ current, onSaved }: {
       description="Activez le dashboard courses, le classement chauffeurs et la synchronisation des commandes Yango."
     >
       <InfoBox>
-        Connectez-vous sur votre portail <strong>Yango Business Partner</strong> pour récupérer
-        ces 3 identifiants dans la section <em>Paramètres → API</em> ou auprès
-        de votre gestionnaire de compte Yango.
+        <p className="font-semibold mb-2">Où trouver ces identifiants ?</p>
+        <p>Connectez-vous sur votre portail <strong>Yango Business Partner</strong> puis allez dans :</p>
+        <ul className="mt-1.5 space-y-1 list-disc list-inside text-[11px]">
+          <li><strong>Park ID</strong> : section <em>Mon parc → Identifiant du parc</em></li>
+          <li><strong>Client ID</strong> : section <em>Paramètres → Intégrations → X-Client-ID</em></li>
+          <li><strong>Clé API</strong> : section <em>Paramètres → API → Générer une clé</em><br/>
+            <span className="text-[10px] ml-4">Une seule clé couvre les endpoints Chauffeurs, Véhicules et Commandes.</span></li>
+        </ul>
+        <p className="mt-1.5 text-[11px]">Besoin d&apos;aide ? Contactez votre gestionnaire de compte Yango ou écrivez-nous.</p>
       </InfoBox>
 
       <form onSubmit={save} className="space-y-3 mt-4">
-        <Field label="Park ID (ID_DU_PARTENAIRE)" required>
+        <Field label="Partner ID (park_id)" required>
           <input type="text" value={parkId} onChange={e => setParkId(e.target.value)}
-            placeholder="Ex: park_CI_xxxxx" required className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+            placeholder="Ex: park_CI_xxxxx" required
+            className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
         </Field>
         <Field label="Client ID (X-Client-ID)" required>
           <input type="text" value={clientId} onChange={e => setClientId(e.target.value)}
-            placeholder="Ex: ci_xxxxxx" required className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
+            placeholder="Ex: ci_xxxxxx" required
+            className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40" />
         </Field>
-        <Field label={`Clé API secrète (X-API-Key)${current?.api_key ? " — laisser vide pour conserver" : ""}`} required={!current?.configured}>
+        <Field label={`Clé API secrète (X-API-Key)${current?.api_key ? " — laisser vide pour conserver l'ancienne" : ""}`} required={!current?.configured}>
           <div className="relative">
             <input
               type={showKey ? "text" : "password"}
               value={apiKey}
               onChange={e => setApiKey(e.target.value)}
-              placeholder={current?.api_key ? "••••••••••••" + current.api_key : "Entrez votre clé API Yango"}
+              placeholder={current?.api_key ? current.api_key : "Votre clé API Yango Business"}
               required={!current?.configured}
               className="w-full rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 pr-10"
             />
@@ -132,7 +140,7 @@ function YangoForm({ current, onSaved }: {
             </button>
           </div>
           <p className="text-[11px] text-gray-500 mt-1">
-            Traitement confidentiel — chiffrée AES-256 avant stockage, jamais exposée côté client.
+            Chiffrée AES-256 avant stockage — jamais exposée en clair.
           </p>
         </Field>
 
