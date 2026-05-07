@@ -72,7 +72,7 @@ const BENEFITS = [
     icon: "🔒",
     color: "#059669",
     title: "Agent dédié, données privées",
-    text: "Votre agent est branché uniquement sur votre base Supabase isolée. Aucun partage, confidentialité totale.",
+    text: "Votre agent est branché uniquement sur votre base de données privée et isolée. Aucun partage, confidentialité totale.",
   },
 ]
 

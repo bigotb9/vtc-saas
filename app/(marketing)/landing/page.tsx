@@ -13,12 +13,14 @@ const NAV_LINKS = [
   { href: "#insights",  label: "AI Insights" },
   { href: "#yango",     label: "Yango" },
   { href: "#pricing",   label: "Tarifs" },
+  { href: "/",          label: "Contact" },
 ]
 
+// KPIs : valeurs qui reflètent le potentiel réel de la plateforme
 const STATS = [
-  { value: 2847400, suffix: " F",  label: "CA géré / mois",    color: "#FF4500" },
-  { value: 312,     suffix: "",    label: "Flottes actives",    color: "#00D4FF" },
-  { value: 4200,    suffix: "+",   label: "Chauffeurs suivis",  color: "#FFD700" },
+  { display: "100%",  label: "Recettes automatisées",  sub: "Import intégré en temps réel",  color: "#FF4500" },
+  { display: "360°",  label: "Vision de votre flotte", sub: "Véhicules, finances, alertes",   color: "#00D4FF" },
+  { display: "24/7",  label: "Pilotage continu",       sub: "Suivi automatique & alertes",   color: "#FFD700" },
 ]
 
 const FEATURES = [
@@ -35,7 +37,7 @@ const AI_FEATURES = [
   { icon: "🔧", tag: "Anticipation",title: "Maintenance prédictive",               text: "Périodicité moyenne calculée → prochaine intervention prédite avant la panne." },
   { icon: "📊", tag: "Coûts",       title: "Dépenses récurrentes & anomalies",     text: "Détection automatique des hausses suspectes +50 % vs période précédente." },
   { icon: "💰", tag: "Prévisionnel",title: "Prévision trésorerie 7 jours",         text: "Basée sur 30j d'historique avec indice de confiance pour anticiper votre cashflow." },
-  { icon: "📱", tag: "Comm.",       title: "Messages WhatsApp pré-rédigés",        text: "Un message personnalisé adapté à la situation réelle de chaque chauffeur à risque." },
+  { icon: "📱", tag: "Communication", title: "Messages WhatsApp pré-rédigés",       text: "Un message personnalisé adapté à la situation réelle de chaque chauffeur à risque." },
   { icon: "📈", tag: "Pilotage",    title: "Coefficient de variation",             text: "Mesure la stabilité de vos recettes. CV bas = flotte régulière. CV élevé = à corriger." },
 ]
 
@@ -43,7 +45,7 @@ const YANGO_FEATURES = [
   { icon: "📊", tag: "Live",         title: "Dashboard courses Yango",          text: "CA, courses, annulations, heures de pointe — synchronisation automatique en temps réel." },
   { icon: "🏆", tag: "Performance",  title: "Classement par performance",       text: "Chaque chauffeur classé par CA, taux de complétion et régularité sur votre parc Yango." },
   { icon: "🔄", tag: "Automatisation",title: "Synchro automatique commandes",  text: "Toutes les courses remontent dans votre base. Historique complet, filtres puissants." },
-  { icon: "💸", tag: "Rentabilité",  title: "Suivi commissions opérateur",      text: "Commission 2,5 % calculée automatiquement et visualisée semaine par semaine." },
+  { icon: "💸", tag: "Rentabilité",  title: "Suivi des commissions opérateur",  text: "Vos commissions calculées automatiquement et visualisées semaine par semaine." },
   { icon: "📱", tag: "Communication",title: "WhatsApp de relance Yango",        text: "Messages personnalisés pour chauffeurs inactifs, adaptés à leur historique Yango." },
   { icon: "🚗", tag: "Centralisé",   title: "Gestion flotte centralisée",       text: "Prestataires, véhicules Yango et VTC classiques — une seule interface de pilotage." },
 ]
@@ -223,7 +225,7 @@ function Hero() {
           <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full mb-8"
             style={{ background: "rgba(255,69,0,.12)", border: "1px solid rgba(255,69,0,.3)", color: "#FF8C55" }}>
             <span className="w-1.5 h-1.5 rounded-full bg-[#FF4500] animate-pulse" />
-            Fait pour la Côte d&apos;Ivoire · Wave · Yango
+            Plateforme de Gestion de véhicule de transport
           </span>
         </motion.div>
 
@@ -242,8 +244,8 @@ function Hero() {
         <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .6, duration: .7 }}
           className="max-w-xl leading-relaxed mb-10 text-lg"
           style={{ color: "rgba(255,255,255,.6)", fontFamily: "'Space Grotesk',sans-serif" }}>
-          Recettes Wave en temps réel, classement Yango, alertes chauffeurs, rapports PDF —
-          tout votre business dans un tableau de bord pensé pour Abidjan.
+          Recettes Wave en temps réel, alertes chauffeurs, rapports PDF —
+          tout votre business dans un tableau de bord professionnel.
         </motion.p>
 
         {/* CTAs */}
@@ -266,8 +268,14 @@ function Hero() {
 
         {/* Stats */}
         <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: .9, duration: .7 }}
-          className="flex flex-wrap items-center justify-center gap-8 md:gap-14">
-          {STATS.map((s, i) => <StatBadge key={i} {...s} delay={i * 100} />)}
+          className="flex flex-wrap items-center justify-center gap-10 md:gap-16">
+          {STATS.map((s, i) => (
+            <div key={i} className="text-center">
+              <div className="text-3xl md:text-4xl font-black mb-1" style={{ color: s.color, fontFamily: "'Syne',sans-serif" }}>{s.display}</div>
+              <div className="text-sm font-semibold text-white/80">{s.label}</div>
+              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,.35)" }}>{s.sub}</div>
+            </div>
+          ))}
         </motion.div>
       </motion.div>
 
@@ -381,7 +389,7 @@ function AiInsightsSection() {
             <RevealText delay={.15}>
               <p className="text-white/50 leading-relaxed mb-8">
                 Moteur d&apos;analyse algorithmique 100 % automatique. Scores, prédictions, anomalies —
-                sans Claude, sans coût IA supplémentaire.
+                sans API externe, sans surcoût.
               </p>
             </RevealText>
             <RevealText delay={.2}>
@@ -530,9 +538,10 @@ function YangoSection() {
               </h2>
             </RevealText>
             <RevealText delay={.15}>
-              <p className="text-white/50 leading-relaxed mb-6">
-                Connectez vos credentials Yango Business et synchronisez automatiquement toutes vos courses.
-                Classement, commissions, alertes — tout en un seul endroit.
+              <p className="text-white/50 leading-relaxed mb-4">
+                Conçue pour les <strong className="text-white/75">sociétés partenaires Yango</strong>, cette option connecte
+                votre espace opérateur Yango à la plateforme et synchronise automatiquement
+                toutes vos courses, commissions et performances chauffeurs.
               </p>
             </RevealText>
             <RevealText delay={.2}>
@@ -570,89 +579,176 @@ function YangoSection() {
 }
 
 /* ─────────────────────────────────────────────
-   PRICING
+   PRICING — version premium
 ───────────────────────────────────────────── */
 function Pricing() {
   const [annual, setAnnual] = useState(false)
+
   return (
-    <section id="pricing" className="py-24" style={{ background: "#030810" }}>
-      <div className="max-w-6xl mx-auto px-6">
-        <RevealText className="text-center mb-4">
-          <h2 className="text-3xl md:text-5xl font-bold text-white" style={{ fontFamily: "'Syne',sans-serif" }}>
-            Tarification <span style={{ color: "#FF4500" }}>simple</span>
+    <section id="pricing" className="py-28 relative overflow-hidden" style={{ background: "linear-gradient(180deg,#030810 0%,#050310 50%,#030810 100%)" }}>
+
+      {/* Glow central */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div style={{
+          position: "absolute", top: "40%", left: "50%", transform: "translate(-50%,-50%)",
+          width: 700, height: 400,
+          background: "radial-gradient(ellipse,rgba(255,69,0,.1) 0%,transparent 70%)",
+          filter: "blur(80px)",
+        }} />
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 relative">
+
+        {/* Header */}
+        <RevealText className="text-center mb-3">
+          <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full"
+            style={{ background: "rgba(255,69,0,.1)", border: "1px solid rgba(255,69,0,.25)", color: "#FF8C55" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FF4500] animate-pulse" />
+            Transparent · Sans engagement · Activation immédiate
+          </span>
+        </RevealText>
+        <RevealText className="text-center mb-3" delay={.08}>
+          <h2 className="text-4xl md:text-5xl font-bold text-white" style={{ fontFamily: "'Syne',sans-serif" }}>
+            Une offre pour <span style={{
+              background: "linear-gradient(135deg,#FF4500,#FFD700)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+            }}>chaque flotte</span>
           </h2>
         </RevealText>
-        <RevealText delay={.1} className="text-center mb-8">
-          <p className="text-white/50">Choisissez le plan adapté à votre flotte.</p>
+        <RevealText className="text-center mb-10" delay={.12}>
+          <p className="text-white/45 max-w-lg mx-auto">
+            Choisissez le plan adapté à la taille de votre activité. Évoluez à tout moment.
+          </p>
         </RevealText>
 
-        {/* Toggle */}
-        <RevealText delay={.15} className="flex justify-center mb-12">
-          <div className="flex items-center gap-4 text-sm">
-            <span className={annual ? "text-white/40" : "text-white font-semibold"}>Mensuel</span>
-            <button onClick={() => setAnnual(a => !a)}
-              className="relative w-12 h-6 rounded-full transition-all"
-              style={{ background: annual ? "#FF4500" : "rgba(255,255,255,.15)" }}>
-              <span className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all"
-                style={{ left: annual ? "auto" : "4px", right: annual ? "4px" : "auto" }} />
+        {/* Toggle mensuel / annuel */}
+        <RevealText delay={.16} className="flex justify-center mb-14">
+          <div className="flex items-center gap-4 p-1.5 rounded-full"
+            style={{ background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.08)" }}>
+            <button onClick={() => setAnnual(false)}
+              className="px-5 py-2 rounded-full text-sm font-semibold transition-all"
+              style={{ background: !annual ? "rgba(255,255,255,.1)" : "transparent", color: !annual ? "#fff" : "rgba(255,255,255,.4)" }}>
+              Mensuel
             </button>
-            <span className={annual ? "text-white font-semibold" : "text-white/40"}>
-              Annuel <span className="text-emerald-400 font-bold">-15%</span>
-            </span>
+            <button onClick={() => setAnnual(true)}
+              className="px-5 py-2 rounded-full text-sm font-semibold transition-all flex items-center gap-2"
+              style={{ background: annual ? "rgba(255,255,255,.1)" : "transparent", color: annual ? "#fff" : "rgba(255,255,255,.4)" }}>
+              Annuel
+              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
+                style={{ background: annual ? "#22c55e" : "rgba(34,197,94,.25)", color: annual ? "#fff" : "#4ade80" }}>
+                -15%
+              </span>
+            </button>
           </div>
         </RevealText>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        {/* Plans */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
           {PLANS.map((p, i) => {
-            const price = annual ? Math.round(parseInt(p.price.replace(" ", "")) * 0.85).toLocaleString("fr-FR") : p.price
+            const monthly = parseInt(p.price.replace(/\s/g, ""))
+            const displayed = annual
+              ? Math.round(monthly * 0.85).toLocaleString("fr-FR")
+              : p.price
+            const annualTotal = (Math.round(monthly * 0.85) * 12).toLocaleString("fr-FR")
+
             return (
-              <RevealText key={p.id} delay={i * .1}>
-                <motion.div whileHover={{ y: p.highlight ? -8 : -4 }} transition={{ type: "spring", stiffness: 250 }}
-                  className="relative rounded-2xl p-6 h-full flex flex-col"
+              <RevealText key={p.id} delay={i * .08}>
+                <motion.div
+                  whileHover={{ y: -6, scale: 1.01 }}
+                  transition={{ type: "spring", stiffness: 280, damping: 22 }}
+                  className="relative flex flex-col rounded-3xl overflow-hidden h-full"
                   style={{
-                    background: p.highlight ? `rgba(255,255,255,.06)` : "rgba(255,255,255,.025)",
-                    border: `1px solid ${p.highlight ? p.accent + "55" : "rgba(255,255,255,.08)"}`,
-                    boxShadow: p.highlight ? `0 20px 60px ${p.accent}22` : "none",
-                  }}>
+                    background: p.highlight
+                      ? "linear-gradient(160deg,rgba(255,215,0,.07) 0%,rgba(255,69,0,.05) 100%)"
+                      : "rgba(255,255,255,.03)",
+                    border: `1px solid ${p.highlight ? "rgba(255,215,0,.35)" : "rgba(255,255,255,.07)"}`,
+                    boxShadow: p.highlight ? "0 0 0 1px rgba(255,215,0,.12), 0 32px 80px rgba(255,215,0,.08)" : "none",
+                  }}
+                >
+                  {/* Badge populaire */}
                   {p.highlight && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold px-3 py-1 rounded-full"
-                      style={{ background: "#FFD700", color: "#000" }}>
+                    <div className="w-full py-2 text-center text-xs font-black uppercase tracking-widest"
+                      style={{ background: "linear-gradient(90deg,#FFD700,#FF8C00)", color: "#000" }}>
                       ⭐ Le plus populaire
                     </div>
                   )}
-                  <div className="font-bold text-sm mb-1" style={{ color: p.accent }}>{p.name}</div>
-                  <div className="flex items-end gap-1 mb-1">
-                    <span className="text-4xl font-black text-white" style={{ fontFamily: "'Syne',sans-serif" }}>{price}</span>
-                    <span className="text-white/40 text-sm pb-1">FCFA{p.period}</span>
-                  </div>
-                  <p className="text-white/40 text-xs mb-5">{p.desc}</p>
-                  <div className="space-y-2 mb-6 flex-1">
-                    {p.features.map(f => (
-                      <div key={f} className="flex items-center gap-2 text-xs text-white/75">
-                        <span style={{ color: p.accent }}>✓</span>{f}
+
+                  <div className="flex-1 p-7 flex flex-col">
+                    {/* Plan name + accent bar */}
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm"
+                        style={{ background: p.accent + "22", color: p.accent, border: `1px solid ${p.accent}44` }}>
+                        {p.name.charAt(0)}
                       </div>
-                    ))}
-                    {p.notIncluded.map(f => (
-                      <div key={f} className="flex items-center gap-2 text-xs text-white/25">
-                        <span>–</span>{f}
+                      <div>
+                        <div className="text-white font-bold">{p.name}</div>
+                        <div className="text-xs text-white/35">{p.desc}</div>
                       </div>
-                    ))}
+                    </div>
+
+                    {/* Prix */}
+                    <div className="mb-2">
+                      <span className="text-5xl font-black text-white" style={{ fontFamily: "'Syne',sans-serif" }}>{displayed}</span>
+                      <span className="text-white/40 text-sm ml-1">FCFA / mois</span>
+                    </div>
+                    {annual && (
+                      <div className="text-xs mb-5" style={{ color: "#4ade80" }}>
+                        Soit {annualTotal} FCFA / an · vous économisez {Math.round(monthly * .15).toLocaleString("fr-FR")} F/mois
+                      </div>
+                    )}
+                    {!annual && <div className="mb-5" />}
+
+                    {/* Séparateur */}
+                    <div className="mb-5" style={{ height: 1, background: "rgba(255,255,255,.06)" }} />
+
+                    {/* Features incluses */}
+                    <div className="space-y-2.5 mb-5 flex-1">
+                      {p.features.map(f => (
+                        <div key={f} className="flex items-start gap-2.5 text-sm text-white/80">
+                          <span className="mt-0.5 text-base leading-none" style={{ color: p.accent }}>✓</span>
+                          <span>{f}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Non inclus */}
+                    {p.notIncluded.length > 0 && (
+                      <div className="space-y-1.5 mb-6">
+                        {p.notIncluded.map(f => (
+                          <div key={f} className="flex items-start gap-2.5 text-xs text-white/25">
+                            <span className="mt-0.5">–</span><span>{f}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* CTA */}
+                    <Link href={`/signup?plan=${p.id}${annual ? "&cycle=yearly" : ""}`}
+                      className="block w-full text-center rounded-2xl py-3.5 font-bold text-sm transition-all"
+                      style={{
+                        background: p.highlight
+                          ? "linear-gradient(135deg,#FFD700,#FF8C00)"
+                          : "rgba(255,255,255,.08)",
+                        color: p.highlight ? "#000" : "#fff",
+                        border: p.highlight ? "none" : "1px solid rgba(255,255,255,.1)",
+                        boxShadow: p.highlight ? "0 8px 32px rgba(255,215,0,.25)" : "none",
+                      }}>
+                      Commencer avec {p.name} →
+                    </Link>
                   </div>
-                  <Link href={`/signup?plan=${p.id}`}
-                    className="w-full text-center rounded-full py-3 font-semibold text-sm transition-all"
-                    style={{
-                      background: p.highlight ? `linear-gradient(135deg,${p.accent},#FF6A00)` : "rgba(255,255,255,.08)",
-                      color: "#fff",
-                      border: p.highlight ? "none" : `1px solid rgba(255,255,255,.12)`,
-                      boxShadow: p.highlight ? `0 4px 20px ${p.accent}40` : "none",
-                    }}>
-                    Choisir {p.name}
-                  </Link>
                 </motion.div>
               </RevealText>
             )
           })}
         </div>
+
+        {/* Note addons */}
+        <RevealText delay={.3} className="mt-10 text-center">
+          <p className="text-white/30 text-sm">
+            Options disponibles : AI Insights +15 000 FCFA/mois · Agent IA +50 000 FCFA/mois
+            · Activation immédiate après paiement · Paiement Wave CI
+          </p>
+        </RevealText>
       </div>
     </section>
   )
@@ -713,7 +809,7 @@ function FinalCta() {
 function Footer() {
   return (
     <footer className="py-10 text-center text-sm border-t" style={{ background: "#020608", borderColor: "rgba(255,255,255,.05)", color: "rgba(255,255,255,.25)" }}>
-      © {new Date().getFullYear()} VTC Dashboard · Abidjan, Côte d&apos;Ivoire · contact@vtcdashboard.com
+      © {new Date().getFullYear()} VTC Dashboard — La plateforme professionnelle de gestion de flotte VTC & Taxi · contact@vtcdashboard.com
     </footer>
   )
 }
