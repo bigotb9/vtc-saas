@@ -22,6 +22,27 @@ import { NextRequest, NextResponse } from "next/server"
 
 const PUBLIC_PREFIXES = ["/saas", "/api/saas", "/api/public", "/api/signup", "/api/payment", "/api/webhooks", "/api/cron", "/dev", "/pay", "/_next", "/favicon", "/icon"]
 
+// ── Rate limiting simple par IP ──────────────────────────────────
+// Routes publiques sensibles au spam / scraping
+const RATE_LIMITED = ["/api/signup", "/api/payment/create-checkout", "/api/webhooks"]
+// Map : ip+path → { count, resetAt }
+const _rlMap = new Map<string, { count: number; resetAt: number }>()
+const RL_WINDOW_MS = 60_000   // fenêtre 1 minute
+const RL_MAX_REQ   = 20        // max 20 requêtes / IP / minute sur ces routes
+
+function checkRateLimit(ip: string, pathname: string): boolean {
+  if (!RATE_LIMITED.some(p => pathname.startsWith(p))) return true
+  const key = `${ip}:${pathname.split("/").slice(0, 4).join("/")}`
+  const now = Date.now()
+  const entry = _rlMap.get(key)
+  if (!entry || entry.resetAt < now) {
+    _rlMap.set(key, { count: 1, resetAt: now + RL_WINDOW_MS })
+    return true
+  }
+  entry.count++
+  return entry.count <= RL_MAX_REQ
+}
+
 /**
  * Routes accessibles SANS tenant — la landing publique vtcdashboard.com.
  * Sur ces paths on n'exige pas de slug et on rewrite vers /(marketing)/* pour
@@ -71,6 +92,16 @@ function resolveSlugFromHost(host: string): string | null {
 
 export function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl
+
+  // ── Rate limiting sur les routes publiques sensibles ──────────
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "unknown"
+  if (!checkRateLimit(ip, pathname)) {
+    return new NextResponse("Too Many Requests", {
+      status: 429,
+      headers: { "Retry-After": "60", "Content-Type": "text/plain" },
+    })
+  }
+
   if (isPublic(pathname)) return NextResponse.next()
 
   // 1. Custom domain : si l'hostname correspond à un tenant.custom_domain,

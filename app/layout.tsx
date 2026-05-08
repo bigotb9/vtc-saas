@@ -14,6 +14,8 @@ import Toaster from "@/components/Toaster"
 import MobileNav from "@/components/MobileNav"
 import GlobalSearch, { useGlobalSearch } from "@/components/GlobalSearch"
 import SupportWidget from "@/components/SupportWidget"
+import { PostHogProvider } from "@/lib/posthog"
+import { LangProvider } from "@/lib/i18n/context"
 
 const geist     = Geist({ subsets: ["latin"], variable: "--font-geist" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
@@ -130,9 +132,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" suppressHydrationWarning>
       <body className={`${geist.variable} ${geistMono.variable} font-sans bg-gray-50 dark:bg-[#080C14] text-gray-900 dark:text-white`}>
-        <ThemeProvider attribute="class" defaultTheme="dark">
-          {content}
-        </ThemeProvider>
+        <PostHogProvider>
+          <LangProvider>
+            <ThemeProvider attribute="class" defaultTheme="dark">
+              {content}
+            </ThemeProvider>
+          </LangProvider>
+        </PostHogProvider>
       </body>
     </html>
   )

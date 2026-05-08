@@ -15,6 +15,7 @@ import { useProfile } from "@/hooks/useProfile"
 import { useTenant, useFeature } from "@/components/TenantProvider"
 import { motion, AnimatePresence } from "framer-motion"
 import { useSidebar } from "@/lib/SidebarContext"
+import { LangSwitcher } from "@/components/LangSwitcher"
 
 // Routes /yango-park/* — l'espace de gestion de la flotte Yango du tenant.
 const YANGO_SERVICE_LABEL = "Partenariat Yango"
@@ -314,11 +315,15 @@ export default function Sidebar({ forceShow = false }: { forceShow?: boolean }) 
         {!collapsed && (
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500 dark:text-gray-600 font-medium">Apparence</span>
-            <ThemeToggle />
+            <div className="flex items-center gap-1.5">
+              <LangSwitcher />
+              <ThemeToggle />
+            </div>
           </div>
         )}
         {collapsed ? (
           <div className="flex flex-col items-center gap-2">
+            <LangSwitcher collapsed />
             <ThemeToggle />
             <motion.div
               className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold cursor-pointer"

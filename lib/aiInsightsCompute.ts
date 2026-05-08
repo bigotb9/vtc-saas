@@ -61,6 +61,7 @@ export type RevenueRegularity = {
   avg_daily:          number
   std_daily:          number
   cv_pct:             number       // coefficient de variation = std/avg × 100
+  daily:              { date: string; total: number }[]   // 30 derniers jours (du plus ancien au plus récent)
 }
 
 export type CashflowForecast = {
@@ -389,9 +390,12 @@ function computeRevenueRegularity(recettes: Recette[], now: Date): RevenueRegula
     byDay.set(d, (byDay.get(d) ?? 0) + (Number(r["Montant net"]) || 0))
   }
   const dailyAmounts: number[] = []
-  for (let i = 0; i < 30; i++) {
+  const daily: { date: string; total: number }[] = []
+  for (let i = 29; i >= 0; i--) {
     const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
-    dailyAmounts.push(byDay.get(d) ?? 0)
+    const total = byDay.get(d) ?? 0
+    dailyAmounts.push(total)
+    daily.push({ date: d, total: Math.round(total) })
   }
 
   const avg = mean(dailyAmounts)
@@ -406,6 +410,7 @@ function computeRevenueRegularity(recettes: Recette[], now: Date): RevenueRegula
     avg_daily:          Math.round(avg),
     std_daily:          Math.round(sd),
     cv_pct:             avg > 0 ? Math.round((sd / avg) * 100) : 0,
+    daily,
   }
 }
 

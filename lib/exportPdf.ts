@@ -1,7 +1,17 @@
 import { jsPDF } from "jspdf"
 import { toast } from "@/lib/toast"
+import type { Lang } from "@/lib/i18n/translations"
 
 type TableRow = (string | number)[]
+
+const PDF_LABELS: Record<Lang, {
+  generated_on: string
+  confidential: string
+  page: string
+}> = {
+  fr: { generated_on: "Généré le", confidential: "Confidentiel", page: "Page" },
+  en: { generated_on: "Generated on", confidential: "Confidential", page: "Page" },
+}
 
 function drawTable(doc: jsPDF, {
   startY, headers, rows, pageW,
@@ -95,10 +105,11 @@ async function loadLogoBase64(): Promise<string | null> {
 }
 
 export async function generatePdf({
-  title, subtitle, sections,
+  title, subtitle, sections, lang = "fr",
 }: {
   title:     string
   subtitle?: string
+  lang?:     Lang
   sections:  {
     title:    string
     headers:  string[]
@@ -107,8 +118,10 @@ export async function generatePdf({
     total?:   { label: string; value: string }
   }[]
 }) {
+  const lbl     = PDF_LABELS[lang]
+  const locale  = lang === "en" ? "en-GB" : "fr-FR"
   const doc     = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" })
-  const today   = new Date().toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" })
+  const today   = new Date().toLocaleDateString(locale, { day: "2-digit", month: "long", year: "numeric" })
   const pageW   = doc.internal.pageSize.getWidth()
   const logoB64 = await loadLogoBase64()
 
@@ -133,7 +146,7 @@ export async function generatePdf({
   doc.setFont("helvetica", "normal")
   doc.setFontSize(8)
   doc.text(subtitle ?? "VTC Dashboard", textX, 21)
-  doc.text(`Généré le ${today}`, pageW - 14, 21, { align: "right" })
+  doc.text(`${lbl.generated_on} ${today}`, pageW - 14, 21, { align: "right" })
 
   let y = bannerH + 8
 
@@ -170,7 +183,7 @@ export async function generatePdf({
     doc.setFontSize(7)
     doc.setTextColor(170, 170, 190)
     doc.text(
-      `Confidentiel · Page ${i}/${pageCount}`,
+      `${lbl.confidential} · ${lbl.page} ${i}/${pageCount}`,
       pageW / 2, doc.internal.pageSize.getHeight() - 6,
       { align: "center" }
     )
