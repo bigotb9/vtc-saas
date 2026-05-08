@@ -15,7 +15,7 @@
 
 // ────────── Types ──────────
 
-export type PlanId = 'silver' | 'gold' | 'platinum'
+export type PlanId = 'silver' | 'gold' | 'platinum' | 'platinum_plus'
 
 export type FeatureKey =
   | 'dashboard'
@@ -34,7 +34,7 @@ export type FeatureKey =
 
 export type AddonId = 'ai_insights' | 'ai_agent' | 'gps'
 
-export type QuotaKey = 'vehicules' | 'users'
+export type QuotaKey = 'vehicules' | 'users' | 'chauffeurs'
 
 export type BillingCycle = 'monthly' | 'yearly'
 
@@ -59,9 +59,11 @@ export type Plan = {
   priceYearlyFcfa:     number
   maxVehicules:        number | null      // null = illimité
   maxUsers:            number | null      // null = illimité
+  maxChauffeurs:       number | null      // null = illimité
   features:            PlanFeatures
   displayOrder:        number
   isPublic:            boolean
+  isCustomAbove?:      boolean            // true = >N véhicules → sur devis
 }
 
 export type Addon = {
@@ -107,11 +109,12 @@ export const PLANS: Record<PlanId, Plan> = {
   silver: {
     id:               'silver',
     name:             'Silver',
-    description:      'Pour les petites flottes qui démarrent — gestion essentielle + Wave inclus.',
+    description:      'Pour démarrer et gérer votre activité de transport — essentiels + Wave inclus.',
     priceMonthlyFcfa: 50_000,
-    priceYearlyFcfa:  510_000,
-    maxVehicules:     15,
+    priceYearlyFcfa:  510_000,          // 50 000 × 12 × 0.85
+    maxVehicules:     10,
     maxUsers:         3,
+    maxChauffeurs:    25,
     features: makeFeatures([
       'dashboard', 'alertes', 'vehicules', 'chauffeurs',
       'recettes', 'depenses', 'wave',
@@ -123,11 +126,12 @@ export const PLANS: Record<PlanId, Plan> = {
   gold: {
     id:               'gold',
     name:             'Gold',
-    description:      'Pour les flottes en croissance — Yango, gestion clients tiers, rapports PDF.',
+    description:      'Pour les flottes en croissance avec partenariat Yango et gestion clients tiers.',
     priceMonthlyFcfa: 100_000,
-    priceYearlyFcfa:  1_020_000,
-    maxVehicules:     40,
-    maxUsers:         8,
+    priceYearlyFcfa:  1_020_000,        // 100 000 × 12 × 0.85
+    maxVehicules:     30,
+    maxUsers:         5,
+    maxChauffeurs:    70,
     features: makeFeatures([
       'dashboard', 'alertes', 'vehicules', 'chauffeurs',
       'recettes', 'depenses', 'wave',
@@ -140,11 +144,12 @@ export const PLANS: Record<PlanId, Plan> = {
   platinum: {
     id:               'platinum',
     name:             'Platinum',
-    description:      'Pour les grandes flottes — tout inclus, IA et agent VTC personnalisé.',
-    priceMonthlyFcfa: 200_000,
-    priceYearlyFcfa:  2_040_000,
-    maxVehicules:     null,
-    maxUsers:         null,
+    description:      'Pour les grandes flottes — IA, Agent VTC et toutes les intégrations incluses.',
+    priceMonthlyFcfa: 250_000,
+    priceYearlyFcfa:  2_550_000,        // 250 000 × 12 × 0.85
+    maxVehicules:     150,
+    maxUsers:         8,
+    maxChauffeurs:    350,
     features: makeFeatures([
       'dashboard', 'alertes', 'vehicules', 'chauffeurs',
       'recettes', 'depenses', 'wave',
@@ -152,6 +157,26 @@ export const PLANS: Record<PlanId, Plan> = {
       'ai_insights', 'ai_agent',
     ]),
     displayOrder: 3,
+    isPublic:     true,
+  },
+
+  platinum_plus: {
+    id:               'platinum_plus',
+    name:             'Platinum+',
+    description:      'Pour les très grandes flottes — limites maximales, tout inclus, support prioritaire.',
+    priceMonthlyFcfa: 500_000,
+    priceYearlyFcfa:  5_100_000,        // 500 000 × 12 × 0.85
+    maxVehicules:     300,
+    maxUsers:         10,
+    maxChauffeurs:    700,
+    isCustomAbove:    true,             // > 300 véhicules → sur devis
+    features: makeFeatures([
+      'dashboard', 'alertes', 'vehicules', 'chauffeurs',
+      'recettes', 'depenses', 'wave',
+      'yango', 'pdf_reports', 'fleet_clients',
+      'ai_insights', 'ai_agent',
+    ]),
+    displayOrder: 4,
     isPublic:     true,
   },
 }
@@ -183,7 +208,7 @@ export const ADDONS: Record<AddonId, Addon> = {
   },
 }
 
-export const PLAN_ORDER: PlanId[] = ['silver', 'gold', 'platinum']
+export const PLAN_ORDER: PlanId[] = ['silver', 'gold', 'platinum', 'platinum_plus']
 export const ADDON_ORDER: AddonId[] = ['ai_insights', 'ai_agent', 'gps']
 
 
@@ -262,8 +287,9 @@ export function getPlanLimit(ctx: TenantPlanContext, kind: QuotaKey): number | n
   const plan = getPlan(ctx.planId)
   if (!plan) return 0   // pas de plan = aucun quota
   switch (kind) {
-    case 'vehicules': return plan.maxVehicules
-    case 'users':     return plan.maxUsers
+    case 'vehicules':  return plan.maxVehicules
+    case 'users':      return plan.maxUsers
+    case 'chauffeurs': return plan.maxChauffeurs
   }
 }
 

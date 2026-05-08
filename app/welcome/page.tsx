@@ -77,7 +77,13 @@ export default function WelcomePage() {
       })
       if (upErr) throw upErr
       setSuccess(true)
-      setTimeout(() => router.push("/dashboard"), 1500)
+      // Si c'est un premier login lié à un plan nécessitant Yango/Wave,
+      // rediriger vers la page d'intégrations en mode onboarding.
+      // Autrement aller directement au dashboard.
+      const slug = typeof document !== "undefined"
+        ? document.cookie.match(/tenant_slug=([^;]+)/)?.[1] : null
+      const dest = slug ? "/account/integrations?onboarding=1" : "/dashboard"
+      setTimeout(() => router.push(dest), 1500)
     } catch (e) {
       setError((e as Error).message)
       setSubmitting(false)

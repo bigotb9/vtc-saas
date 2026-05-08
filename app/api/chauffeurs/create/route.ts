@@ -2,12 +2,30 @@ import { NextRequest, NextResponse } from "next/server"
 import { logActivity } from "@/lib/logActivity"
 import { requirePermission } from "@/lib/requirePermission"
 import { getTenantAdmin } from "@/lib/supabaseTenant"
+import { enforceCurrentTenantQuota, QuotaExceededError } from "@/lib/plansServer"
 
 export async function POST(req: NextRequest) {
   const supabase = await getTenantAdmin()
   try {
     const auth = await requirePermission(req, "create_chauffeur")
     if (!auth.ok) return auth.response
+
+    // Quota chauffeurs : refuse si le plan est dépassé
+    try {
+      await enforceCurrentTenantQuota("chauffeurs")
+    } catch (e) {
+      if (e instanceof QuotaExceededError) {
+        return NextResponse.json({
+          success: false,
+          error: `Quota chauffeurs atteint (${e.current}/${e.limit}). Passez à un plan supérieur pour en ajouter davantage.`,
+          code: "QUOTA_EXCEEDED",
+          kind: "chauffeurs",
+          current: e.current,
+          limit: e.limit,
+        }, { status: 402 })
+      }
+      throw e
+    }
 
     const body = await req.json()
 

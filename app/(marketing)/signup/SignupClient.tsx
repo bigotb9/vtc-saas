@@ -100,7 +100,7 @@ export default function SignupClient({ plans, defaultPlan, defaultCycle }: Props
 
         {/* Plan & cycle */}
         <Section title="1. Plan choisi">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             {plans.map((p) => (
               <button
                 key={p.id}
@@ -112,10 +112,18 @@ export default function SignupClient({ plans, defaultPlan, defaultCycle }: Props
                     : "border-gray-200 dark:border-white/10 bg-white dark:bg-white/[0.02] hover:border-gray-300"
                 }`}
               >
-                <div className="font-semibold">{p.name}</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <div className="font-semibold text-sm">{p.name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                   {formatFcfa(p.priceMonthlyFcfa)} / mois
                 </div>
+                {p.maxVehicules && (
+                  <div className="text-[10px] text-gray-400 mt-1">
+                    {p.maxVehicules} véh · {p.maxChauffeurs} chauf · {p.maxUsers} users
+                  </div>
+                )}
+                {p.id === "platinum_plus" && (
+                  <div className="text-[10px] text-purple-500 mt-1">&gt;300 véh → sur devis</div>
+                )}
               </button>
             ))}
           </div>

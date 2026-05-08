@@ -53,23 +53,48 @@ const YANGO_FEATURES = [
 const PLANS = [
   {
     id: "silver", name: "Silver", price: "50 000", period: "/ mois", accent: "#94a3b8",
-    desc: "Pour démarrer et gérer votre flotte en toute simplicité.",
-    features: ["15 véhicules max", "3 utilisateurs", "Recettes Wave", "Alertes documents", "Rapports PDF"],
-    notIncluded: ["Partenariat Yango", "AI Insights", "Agent IA VTC"],
+    desc: "Pour démarrer votre activité de transport.",
+    features: ["10 véhicules", "25 chauffeurs", "3 utilisateurs", "Recettes Wave", "Alertes & documents", "Rapports PDF"],
+    notIncluded: ["Partenariat Yango", "AI Insights (option)", "Agent IA (option)"],
   },
   {
     id: "gold", name: "Gold", price: "100 000", period: "/ mois", accent: "#FFD700",
-    desc: "Pour les flottes en croissance avec partenariat Yango.",
-    features: ["40 véhicules max", "8 utilisateurs", "Tout Silver +", "Partenariat Yango", "Gestion flotte tiers"],
+    desc: "Pour les flottes en croissance avec Yango.",
+    features: ["30 véhicules", "70 chauffeurs", "5 utilisateurs", "Tout Silver +", "Partenariat Yango", "Gestion flotte tiers"],
     notIncluded: ["AI Insights (option)", "Agent IA (option)"],
     highlight: true,
   },
   {
-    id: "platinum", name: "Platinum", price: "200 000", period: "/ mois", accent: "#FF4500",
-    desc: "Pour les grandes flottes avec IA et agent personnalisé.",
-    features: ["Véhicules illimités", "Utilisateurs illimités", "Tout Gold +", "AI Insights inclus", "Agent IA VTC inclus"],
+    id: "platinum", name: "Platinum", price: "250 000", period: "/ mois", accent: "#FF4500",
+    desc: "Pour les grandes flottes avec IA complète.",
+    features: ["150 véhicules", "350 chauffeurs", "8 utilisateurs", "Tout Gold +", "AI Insights inclus", "Agent IA VTC inclus"],
     notIncluded: [],
   },
+  {
+    id: "platinum_plus", name: "Platinum+", price: "500 000", period: "/ mois", accent: "#a855f7",
+    desc: "Pour les très grandes flottes. > 300 véhicules sur devis.",
+    features: ["300 véhicules", "700 chauffeurs", "10 utilisateurs", "Tout Platinum +", "Support prioritaire", "> 300 véhicules → sur devis"],
+    notIncluded: [],
+  },
+]
+
+// ─── Tableau comparatif ───────────────────────────────────────
+const COMPARISON_ROWS = [
+  { label: "Prix mensuel",             values: ["50 000 F", "100 000 F", "250 000 F", "500 000 F"], section: "Tarification" },
+  { label: "Prix annuel (-15%)",        values: ["42 500 F/mois", "85 000 F/mois", "212 500 F/mois", "425 000 F/mois"], section: null },
+  { label: "Véhicules",                values: ["10", "30", "150", "300 (sur devis +)"], section: "Quotas" },
+  { label: "Chauffeurs",               values: ["25", "70", "350", "700"], section: null },
+  { label: "Utilisateurs",             values: ["3", "5", "8", "10"], section: null },
+  { label: "Tableau de bord complet",  values: ["✓", "✓", "✓", "✓"], section: "Fonctionnalités" },
+  { label: "Alertes documents & paiements", values: ["✓", "✓", "✓", "✓"], section: null },
+  { label: "Gestion véhicules & chauffeurs", values: ["✓", "✓", "✓", "✓"], section: null },
+  { label: "Recettes Wave intégrées",  values: ["✓", "✓", "✓", "✓"], section: null },
+  { label: "Rapports PDF",             values: ["✓", "✓", "✓", "✓"], section: null },
+  { label: "Partenariat Yango",        values: ["Option", "✓", "✓", "✓"], section: "Options" },
+  { label: "Gestion flotte tiers",     values: ["—", "✓", "✓", "✓"], section: null },
+  { label: "AI Insights",              values: ["Option", "Option", "✓", "✓"], section: null },
+  { label: "Agent IA VTC",             values: ["Option", "Option", "✓", "✓"], section: null },
+  { label: "Support prioritaire",      values: ["—", "—", "—", "✓"], section: null },
 ]
 
 /* ─────────────────────────────────────────────
@@ -743,11 +768,61 @@ function Pricing() {
         </div>
 
         {/* Note addons */}
-        <RevealText delay={.3} className="mt-10 text-center">
+        <RevealText delay={.3} className="mt-8 text-center">
           <p className="text-white/30 text-sm">
             Options disponibles : AI Insights +15 000 FCFA/mois · Agent IA +50 000 FCFA/mois
-            · Activation immédiate après paiement · Paiement Wave CI
+            · Activation immédiate après paiement · Paiement Wave
           </p>
+        </RevealText>
+
+        {/* Tableau comparatif détaillé */}
+        <RevealText delay={.35} className="mt-16">
+          <div className="rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,.07)" }}>
+            {/* Header */}
+            <div className="grid gap-px" style={{ gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", background: "rgba(255,255,255,.05)" }}>
+              <div className="p-4 text-xs font-bold uppercase tracking-wider text-white/40" style={{ background: "rgba(255,255,255,.03)" }}>
+                Fonctionnalité
+              </div>
+              {PLANS.map(p => (
+                <div key={p.id} className="p-4 text-center" style={{ background: "rgba(255,255,255,.03)" }}>
+                  <div className="text-sm font-bold" style={{ color: p.accent }}>{p.name}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Rows */}
+            {COMPARISON_ROWS.map((row, i) => (
+              <div key={row.label}>
+                {row.section && (
+                  <div className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-white/25"
+                    style={{ background: "rgba(255,255,255,.015)", borderTop: "1px solid rgba(255,255,255,.06)" }}>
+                    {row.section}
+                  </div>
+                )}
+                <div className="grid gap-px" style={{
+                  gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
+                  background: "rgba(255,255,255,.04)",
+                  borderTop: row.section ? "none" : "1px solid rgba(255,255,255,.04)",
+                }}>
+                  <div className="px-4 py-3 text-xs text-white/60" style={{ background: i % 2 === 0 ? "rgba(255,255,255,.02)" : "transparent" }}>
+                    {row.label}
+                  </div>
+                  {row.values.map((val, j) => (
+                    <div key={j} className="px-4 py-3 text-center text-xs font-medium"
+                      style={{
+                        background: i % 2 === 0 ? "rgba(255,255,255,.015)" : "transparent",
+                        color: val === "✓" ? "#22c55e"
+                          : val === "—" ? "rgba(255,255,255,.2)"
+                          : val === "Option" ? "#fbbf24"
+                          : "rgba(255,255,255,.8)",
+                      }}>
+                      {val}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </RevealText>
       </div>
     </section>

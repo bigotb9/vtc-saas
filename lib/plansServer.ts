@@ -99,7 +99,7 @@ export async function countTenantResource(
   client: SupabaseClient,
   kind: QuotaKey,
 ): Promise<number> {
-  const table = kind === "vehicules" ? "vehicules" : "profiles"
+  const table = kind === "vehicules" ? "vehicules" : kind === "chauffeurs" ? "chauffeurs" : "profiles"
   const { count, error } = await client
     .from(table)
     .select("*", { count: "exact", head: true })

@@ -60,9 +60,10 @@ export async function computeSaasMetrics(): Promise<SaasMetrics> {
     .in("status", ["active", "trialing", "past_due"])
 
   const customers_by_plan: Record<PlanId, number> = {
-    silver:   0,
-    gold:     0,
-    platinum: 0,
+    silver:        0,
+    gold:          0,
+    platinum:      0,
+    platinum_plus: 0,
   }
   let mrr_fcfa = 0
   let customers_in_arrears = 0
