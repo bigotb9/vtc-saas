@@ -27,21 +27,44 @@ export type PendingWaveValidation = {
   claimed_at:       string
 }
 
+export type PastDueTenant = {
+  tenant_id:            string
+  slug:                 string
+  nom:                  string
+  email_admin:          string
+  plan_id:              string
+  amount_fcfa:          number
+  current_period_end:   string
+  days_overdue:         number
+}
+
 export type SaasMetrics = {
-  mrr_fcfa:                  number
-  arr_fcfa:                  number
+  // Revenu Mensuel Récurrent — normalisé, base du pilotage
+  rmr_fcfa:                  number
+  // Revenu Annuel Récurrent projeté = Σ(mensuel×12 + annuel au montant réel)
+  rar_fcfa:                  number
+  // Revenu Moyen Par Client
+  arpu_fcfa:                 number
+  // Croissance MoM revenues encaissés
+  revenue_growth_pct:        number | null
+
   active_customers:          number
   customers_by_plan:         Record<PlanId, number>
   customers_in_arrears:      number   // past_due
   customers_suspended:       number
   customers_awaiting_payment: number
-  churn_rate_30d:            number   // pourcentage 0-100
+
+  // Taux de churn 30 jours (approximation cohort)
+  churn_rate_30d:            number
+
   revenue_this_month_fcfa:   number
   revenue_last_month_fcfa:   number
   signups_this_month:        number
 
-  // Paiements Wave que le client a déclarés mais que l'admin SaaS n'a
-  // pas encore validés. À traiter en priorité depuis le dashboard.
+  // Abonnements en retard de paiement (détail pour la page /paiements)
+  past_due_tenants:          PastDueTenant[]
+
+  // Paiements Wave déclarés non encore validés
   pending_wave_validations:  PendingWaveValidation[]
 }
 
@@ -53,30 +76,61 @@ export async function computeSaasMetrics(): Promise<SaasMetrics> {
   const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-  // Subscriptions actives
+  // Subscriptions actives avec jointure tenant pour les détails past_due
   const { data: activeSubs } = await supabaseMaster
     .from("subscriptions")
-    .select("id, plan_id, status, billing_cycle, amount_fcfa")
+    .select("id, tenant_id, plan_id, status, billing_cycle, amount_fcfa, current_period_end")
     .in("status", ["active", "trialing", "past_due"])
 
   const customers_by_plan: Record<PlanId, number> = {
-    silver:        0,
-    gold:          0,
-    platinum:      0,
-    platinum_plus: 0,
+    silver: 0, gold: 0, platinum: 0, platinum_plus: 0,
   }
-  let mrr_fcfa = 0
+
+  // RMR = Revenu Mensuel Récurrent
+  // RAR = Revenu Annuel Récurrent = Σ(mensuel×12) + Σ(annuel au montant réel)
+  let rmr_fcfa = 0
+  let rar_fcfa = 0
   let customers_in_arrears = 0
+  const pastDueTenantIds: string[] = []
 
   for (const s of activeSubs ?? []) {
     if ((PLAN_ORDER as string[]).includes(s.plan_id)) {
       customers_by_plan[s.plan_id as PlanId]++
     }
-    // Normalise en mensuel : si yearly, on divise par 12.
-    const monthlyAmount = s.billing_cycle === "yearly" ? s.amount_fcfa / 12 : s.amount_fcfa
-    mrr_fcfa += monthlyAmount
+    const monthly = s.billing_cycle === "yearly" ? s.amount_fcfa / 12 : s.amount_fcfa
+    rmr_fcfa += monthly
+    // RAR : pour annuel on prend le montant contracté réel, pour mensuel on annualise
+    rar_fcfa += s.billing_cycle === "yearly" ? s.amount_fcfa : s.amount_fcfa * 12
+    if (s.status === "past_due") {
+      customers_in_arrears++
+      if (s.tenant_id) pastDueTenantIds.push(s.tenant_id)
+    }
+  }
 
-    if (s.status === "past_due") customers_in_arrears++
+  // Détail des tenants past_due pour la page /paiements
+  const past_due_tenants: PastDueTenant[] = []
+  if (pastDueTenantIds.length > 0) {
+    const { data: pdTenants } = await supabaseMaster
+      .from("tenants")
+      .select("id, slug, nom, email_admin")
+      .in("id", pastDueTenantIds)
+    const pdTenantsMap = new Map((pdTenants ?? []).map(t => [t.id, t]))
+    for (const s of (activeSubs ?? []).filter(s => s.status === "past_due")) {
+      const t = pdTenantsMap.get(s.tenant_id)
+      if (!t) continue
+      const daysOverdue = Math.floor((now.getTime() - new Date(s.current_period_end).getTime()) / 86400000)
+      past_due_tenants.push({
+        tenant_id:          t.id,
+        slug:               t.slug,
+        nom:                t.nom,
+        email_admin:        t.email_admin,
+        plan_id:            s.plan_id,
+        amount_fcfa:        s.amount_fcfa,
+        current_period_end: s.current_period_end,
+        days_overdue:       Math.max(0, daysOverdue),
+      })
+    }
+    past_due_tenants.sort((a, b) => b.days_overdue - a.days_overdue)
   }
 
   const active_customers = activeSubs?.length ?? 0
@@ -168,10 +222,18 @@ export async function computeSaasMetrics(): Promise<SaasMetrics> {
   // Tri : plus ancien claim en premier (à traiter en priorité)
   pending_wave_validations.sort((a, b) => a.claimed_at.localeCompare(b.claimed_at))
 
+  const active_customers_total = activeSubs?.length ?? 0
+  const arpu_fcfa = active_customers_total > 0 ? Math.round(rmr_fcfa / active_customers_total) : 0
+  const revenue_growth_pct = revenue_last_month_fcfa > 0
+    ? Math.round(((revenue_this_month_fcfa - revenue_last_month_fcfa) / revenue_last_month_fcfa) * 1000) / 10
+    : null
+
   return {
-    mrr_fcfa:                   Math.round(mrr_fcfa),
-    arr_fcfa:                   Math.round(mrr_fcfa * 12),
-    active_customers,
+    rmr_fcfa:                   Math.round(rmr_fcfa),
+    rar_fcfa:                   Math.round(rar_fcfa),
+    arpu_fcfa,
+    revenue_growth_pct,
+    active_customers:           active_customers_total,
     customers_by_plan,
     customers_in_arrears,
     customers_suspended:        customers_suspended ?? 0,
@@ -180,6 +242,7 @@ export async function computeSaasMetrics(): Promise<SaasMetrics> {
     revenue_this_month_fcfa,
     revenue_last_month_fcfa,
     signups_this_month:         signups_this_month ?? 0,
+    past_due_tenants,
     pending_wave_validations,
   }
 }

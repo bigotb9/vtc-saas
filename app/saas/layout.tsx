@@ -2,69 +2,108 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Building2, Users, LogOut, LayoutDashboard, Plus } from "lucide-react"
+import { useEffect, useState } from "react"
+import {
+  LayoutDashboard, Users, CreditCard, ShieldCheck,
+  LogOut, Zap, Bug, ChevronRight,
+} from "lucide-react"
 import SaasAdminGuard from "@/components/SaasAdminGuard"
 import { supabaseMasterClient as sb } from "@/lib/supabaseMasterClient"
+
+const NAV = [
+  { href: "/saas",           label: "Dashboard",    icon: LayoutDashboard, exact: true },
+  { href: "/saas/tenants",   label: "Clients",      icon: Users },
+  { href: "/saas/paiements", label: "Paiements",    icon: CreditCard },
+  { href: "/saas/admins",    label: "Admins SaaS",  icon: ShieldCheck },
+  { href: "/saas/debug",     label: "Debug",        icon: Bug },
+]
 
 export default function SaasLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || ""
   const router   = useRouter()
+  const [adminEmail, setAdminEmail] = useState<string | null>(null)
 
-  // La page /saas/login n'a pas besoin du guard ni du sidebar
-  if (pathname === "/saas/login") {
-    return <>{children}</>
-  }
+  useEffect(() => {
+    sb.auth.getUser().then(({ data }) => setAdminEmail(data.user?.email ?? null))
+  }, [])
+
+  if (pathname === "/saas/login") return <>{children}</>
 
   const logout = async () => {
     await sb.auth.signOut()
     router.replace("/saas/login")
   }
 
-  const links = [
-    { href: "/saas",              label: "Dashboard", icon: LayoutDashboard },
-    { href: "/saas/tenants",      label: "Clients",   icon: Users },
-    { href: "/saas/tenants/new",  label: "Nouveau client", icon: Plus },
-  ]
-
   return (
     <SaasAdminGuard>
-      <div className="flex min-h-screen bg-slate-50 dark:bg-[#080C14]">
-        {/* Sidebar SaaS */}
-        <aside className="w-60 flex-shrink-0 bg-white dark:bg-[#0D1424] border-r border-gray-100 dark:border-[#1E2D45] p-4 flex flex-col">
-          <div className="flex items-center gap-2 mb-8 px-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/25">
-              <Building2 size={15} className="text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-black text-gray-900 dark:text-white leading-none">SaaS</p>
-              <p className="text-[10px] text-gray-400 leading-none mt-0.5">Tour de contrôle</p>
-            </div>
+      <div className="flex min-h-screen" style={{ background: "#030810" }}>
+
+        {/* ── Sidebar ── */}
+        <aside className="w-56 flex-shrink-0 flex flex-col border-r"
+          style={{ background: "rgba(255,255,255,.025)", borderColor: "rgba(255,255,255,.06)" }}>
+
+          {/* Brand */}
+          <div className="px-4 py-5 border-b" style={{ borderColor: "rgba(255,255,255,.06)" }}>
+            <Link href="/saas" className="flex items-center gap-2.5">
+              <div style={{ width:32,height:32,borderRadius:10,background:"linear-gradient(135deg,#FF4500,#FF6A00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,boxShadow:"0 2px 10px rgba(255,69,0,.4)" }}>⚡</div>
+              <div>
+                <div className="text-white font-black text-sm leading-none">Tour de contrôle</div>
+                <div className="text-[10px] mt-0.5" style={{ color:"rgba(255,255,255,.35)" }}>VTC Dashboard Admin</div>
+              </div>
+            </Link>
           </div>
 
-          <nav className="space-y-1 flex-1">
-            {links.map(l => {
-              const active = pathname === l.href || (l.href !== "/saas" && pathname.startsWith(l.href))
+          {/* Nav */}
+          <nav className="flex-1 px-3 py-4 space-y-0.5">
+            {NAV.map(l => {
+              const active = l.exact ? pathname === l.href : pathname.startsWith(l.href)
               const Icon = l.icon
               return (
                 <Link key={l.href} href={l.href}
-                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition ${
-                    active
-                      ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
-                      : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5"
-                  }`}>
-                  <Icon size={15} />{l.label}
+                  className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all group"
+                  style={{
+                    background: active ? "rgba(255,69,0,.12)" : "transparent",
+                    color: active ? "#FF8C55" : "rgba(255,255,255,.45)",
+                    border: active ? "1px solid rgba(255,69,0,.22)" : "1px solid transparent",
+                  }}>
+                  <div className="flex items-center gap-2.5">
+                    <Icon size={15} />
+                    {l.label}
+                  </div>
+                  {active && <ChevronRight size={12} style={{ color:"rgba(255,69,0,.6)" }} />}
                 </Link>
               )
             })}
           </nav>
 
-          <button onClick={logout}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 transition">
-            <LogOut size={15} />Déconnexion
-          </button>
+          {/* User + logout */}
+          <div className="px-3 py-4 border-t" style={{ borderColor:"rgba(255,255,255,.06)" }}>
+            {adminEmail && (
+              <div className="px-3 py-2 mb-2 rounded-xl" style={{ background:"rgba(255,255,255,.04)" }}>
+                <div className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Connecté</div>
+                <div className="text-xs text-white/70 truncate">{adminEmail}</div>
+              </div>
+            )}
+            <button onClick={logout}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-all"
+              style={{ color:"rgba(255,255,255,.35)" }}
+              onMouseEnter={e => {
+                ;(e.currentTarget as HTMLElement).style.background = "rgba(239,68,68,.1)"
+                ;(e.currentTarget as HTMLElement).style.color = "#f87171"
+              }}
+              onMouseLeave={e => {
+                ;(e.currentTarget as HTMLElement).style.background = "transparent"
+                ;(e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,.35)"
+              }}>
+              <LogOut size={14} /> Déconnexion
+            </button>
+          </div>
         </aside>
 
-        <main className="flex-1 p-6 overflow-x-auto">{children}</main>
+        {/* ── Content ── */}
+        <main className="flex-1 overflow-x-auto" style={{ color:"#fff" }}>
+          {children}
+        </main>
       </div>
     </SaasAdminGuard>
   )
